@@ -156,10 +156,17 @@
 
         async function fetchGitHubData(endpoint) {
             const token = document.getElementById('tokenInput').value.trim();
-            const headers = { "Accept": "application/vnd.github.v3+json" };
+            const headers = { 
+                "Accept": "application/vnd.github.v3+json"
+            };
             if (token) headers["Authorization"] = `token ${token}`;
 
-            const response = await fetch(`https://api.github.com/repos/${currentOwnerRepo}/${endpoint}`, { headers });
+            // Clean leading/trailing slashes from currentOwnerRepo parsing
+            const cleanRepoPath = currentOwnerRepo.replace(/^\/+|\/+$/g, '');
+            const targetUrl = `https://api.github.com/repos/${cleanRepoPath}${endpoint ? '/' + endpoint : ''}`;
+
+            const response = await fetch(targetUrl, { method: "GET", headers: headers });
+            
             const rateLimit = response.headers.get("X-RateLimit-Remaining");
             const rateLimitLimit = response.headers.get("X-RateLimit-Limit");
             if(rateLimit && rateLimitLimit) {
@@ -173,16 +180,17 @@
         async function loadRemoteRepository() {
             const repoValue = document.getElementById('repoInput').value.trim();
             if (!repoValue || !repoValue.includes('/')) {
-                alert("Please match an 'owner/repository' pattern structural setup layout format.");
+                alert("Please match an 'owner/repository' pattern format.");
                 return;
             }
 
             currentOwnerRepo = repoValue;
             document.getElementById('currentRepoLabel').innerText = repoValue;
             const treeContainer = document.getElementById('treeLoadingContainer');
-            treeContainer.innerHTML = `<div class="p-12 text-center text-xs text-gray-500"><span class="animate-pulse font-mono block">Analyzing repository branch configurations...</span></div>`;
+            treeContainer.innerHTML = `<div class="p-12 text-center text-xs text-gray-500"><span class="animate-pulse font-mono block">Analyzing branch configurations...</span></div>`;
 
             try {
+                // Fetch repository baseline properties to discover default branch context
                 const repoMetadata = await fetchGitHubData("");
                 activeDefaultBranch = repoMetadata.default_branch || "main";
 
@@ -208,7 +216,7 @@
                 filterSkills();
             } catch (err) {
                 console.error(err);
-                treeContainer.innerHTML = `<div class="p-6 text-center text-xs text-rose-600 font-medium">Ingestion failure. Check repository path rules or API rate limit metrics.</div>`;
+                treeContainer.innerHTML = `<div class="p-6 text-center text-xs text-rose-600 font-medium">Ingestion failure. Check network connectivity or API token authorizations.</div>`;
             }
         }
 
@@ -223,7 +231,6 @@
             if (activeEcosystemSignature === "AGENTFORCE_SKILLS" && parts[0] === 'skills' && parts.length > 1) {
                 return parts[1].split('-')[0].toUpperCase() + ' Actions';
             }
-            // Robust Fix: For flat repository structures, safely return a unified root placeholder string
             if (parts.length > 1 && parts[0] !== "") return parts[0].toUpperCase() + ' Namespace';
             return 'ROOT REPOSITORY MODULES';
         }
