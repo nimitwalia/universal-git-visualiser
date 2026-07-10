@@ -29,7 +29,7 @@
                 </div>
                 <div>
                     <h1 class="text-sm font-bold text-slate-100">Universal Git Visualiser</h1>
-                    <p class="text-[10px] text-sky-400 font-mono tracking-wider">Composite Multi-Signature Architecture</p>
+                    <p class="text-[10px] text-sky-400 font-mono tracking-wider">Strict Multi-Signature Architecture</p>
                 </div>
             </div>
 
@@ -144,8 +144,7 @@
                         <div class="overflow-y-auto flex-1 prose max-w-none text-xs" id="markdownContainer"></div>
                     </div>
 
-                    <div class="xl:col-span-4 space-y-4 flex flex-col" id="widgetWorkspaceStack">
-                        </div>
+                    <div class="xl:col-span-4 space-y-4 flex flex-col" id="widgetWorkspaceStack"></div>
                 </div>
             </div>
         </section>
@@ -157,7 +156,6 @@
         let selectedSkillId = null;
         let expandedFolders = {};
         
-        // Composite Flags replace the single string property ecosystem flag
         let activeSignatures = {
             AGENTFORCE_SKILLS: false,
             SALESFORCE_DX: false,
@@ -257,6 +255,7 @@
             loadRemoteRepository();
         }
 
+        // Feature 3: URL Param Deep-Linking Generator Action
         function checkUrlDeepLinks() {
             const params = new URLSearchParams(window.location.search);
             const targetRepo = params.get('repo');
@@ -316,9 +315,6 @@
                 const repoMetadata = await fetchGitHubData("");
                 activeDefaultBranch = repoMetadata.default_branch || "main";
 
-                const rootContents = await fetchGitHubData("contents");
-                detectCompositeSignatures(rootContents);
-
                 const treeResponse = await fetchGitHubData(`git/trees/${activeDefaultBranch}?recursive=1`);
                 
                 repositoryTreeData = treeResponse.tree.map(item => ({
@@ -327,6 +323,9 @@
                     type: item.type === 'tree' ? 'dir' : 'file',
                     download_url: `https://raw.githubusercontent.com/${currentOwnerRepo}/${activeDefaultBranch}/${item.path}`
                 }));
+
+                // STRICT METADATA SEARCH: Scan the full tree dataset array dynamically for strict structural markers
+                detectCompositeSignaturesFromTree(repositoryTreeData);
 
                 document.getElementById('itemCountBadge').innerText = repositoryTreeData.length;
                 document.getElementById('shareContainer').classList.remove('hidden');
@@ -346,17 +345,20 @@
             }
         }
 
-        // FIXED: Independent, concurrent signature evaluation maps multiple badges at once
-        function detectCompositeSignatures(filesArray) {
-            const names = filesArray.map(f => f.name);
+        // FIXED: Scans the entire tree array dynamically for accurate structural markers
+        function detectCompositeSignaturesFromTree(treeNodes) {
+            const paths = treeNodes.map(n => n.path);
             const badgeContainer = document.getElementById('badgeContainer');
             
-            // Reset composite matrix mapping arrays
-            activeSignatures.AGENTFORCE_SKILLS = names.includes('package.json') && filesArray.some(f => f.name === 'skills' && f.type === 'dir');
-            activeSignatures.SALESFORCE_DX = names.includes('sfdx-project.json');
-            activeSignatures.NODE_JS = names.includes('package.json');
+            // 1. Strict Check: A skills folder MUST contain a skill.json inside it to be verified
+            activeSignatures.AGENTFORCE_SKILLS = paths.some(p => p.startsWith('skills/') && p.endsWith('skill.json'));
             
-            // If any known signature matches, flip generic base off
+            // 2. Strict Check: Explicit Salesforce DX project configuration placement
+            activeSignatures.SALESFORCE_DX = paths.includes('sfdx-project.json');
+            
+            // 3. Strict Check: Standard Node project configuration placement
+            activeSignatures.NODE_JS = paths.includes('package.json');
+            
             activeSignatures.GENERIC = !(activeSignatures.AGENTFORCE_SKILLS || activeSignatures.SALESFORCE_DX || activeSignatures.NODE_JS);
 
             let badgesHtml = "";
@@ -508,19 +510,16 @@
                     renderBox.innerHTML = `<pre class="bg-slate-900 text-slate-100 p-4 rounded font-mono text-xs overflow-x-auto leading-relaxed"><code>${safeText}</code></pre>`;
                 }
 
-                // Call the composite rendering engine patch block
                 renderCompositeSidebarWidgets(node, rawText);
             } catch (e) {
                 renderBox.innerHTML = `<span class="text-rose-600 font-medium font-mono text-xs">Failed to stream file data vectors.</span>`;
             }
         }
 
-        // FIXED: Replaced old exclusive structure with additive node widget mapping block loops
         function renderCompositeSidebarWidgets(node, rawText) {
             const stackContainer = document.getElementById('widgetWorkspaceStack');
             let compositeHtml = "";
 
-            // Baseline global properties metrics template card (Always Renders)
             compositeHtml += `
                 <div class="bg-white border border-gray-200 rounded-lg p-3.5 shadow-sm">
                     <span class="text-[9px] font-bold tracking-widest text-gray-400 uppercase mb-2 block">Interface Metrics Matrix</span>
@@ -531,7 +530,6 @@
                 </div>
             `;
 
-            // Condition 1: Add Agentforce panel if the repository carries the framework signature
             if (activeSignatures.AGENTFORCE_SKILLS && node.path.startsWith('skills/')) {
                 const skillId = node.path.split('/')[1] || "target-skill";
                 compositeHtml += `
@@ -548,7 +546,6 @@
                 `;
             }
 
-            // Condition 2: Add Salesforce DX deploy card concurrently if the repo contains the platform config file
             if (activeSignatures.SALESFORCE_DX) {
                 compositeHtml += `
                     <div class="bg-slate-900 border border-sky-800 rounded-lg p-3.5 shadow-md flex flex-col">
@@ -564,7 +561,6 @@
                 `;
             }
 
-            // Condition 3: Handle generic baseline clone indicators if no explicit frameworks match
             if (activeSignatures.GENERIC || (!activeSignatures.AGENTFORCE_SKILLS && !activeSignatures.SALESFORCE_DX)) {
                 compositeHtml += `
                     <div class="bg-slate-900 border border-gray-800 rounded-lg p-3.5 shadow-md flex flex-col">
@@ -575,7 +571,7 @@
                                 <span class="truncate font-medium text-gray-100">git clone https://github.com/${currentOwnerRepo}.git</span>
                             </div>
                         </div>
-                        <p class="text-[10px] text-gray-400 mt-2 leading-relaxed">Clone this entire open-source repository context framework structure down into a local terminal terminal shell.</p>
+                        <p class="text-[10px] text-gray-400 mt-2 leading-relaxed">Clone this entire open-source repository context framework structure down into a local terminal shell.</p>
                     </div>
                 `;
             }
