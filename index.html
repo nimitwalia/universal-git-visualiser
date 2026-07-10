@@ -29,7 +29,7 @@
                 </div>
                 <div>
                     <h1 class="text-sm font-bold text-slate-100">Universal Git Visualiser</h1>
-                    <p class="text-[10px] text-sky-400 font-mono tracking-wider">Strict Multi-Signature Architecture</p>
+                    <p class="text-[10px] text-sky-400 font-mono tracking-wider">Composite Multi-Signature Architecture</p>
                 </div>
             </div>
 
@@ -255,7 +255,6 @@
             loadRemoteRepository();
         }
 
-        // Feature 3: URL Param Deep-Linking Generator Action
         function checkUrlDeepLinks() {
             const params = new URLSearchParams(window.location.search);
             const targetRepo = params.get('repo');
@@ -324,7 +323,6 @@
                     download_url: `https://raw.githubusercontent.com/${currentOwnerRepo}/${activeDefaultBranch}/${item.path}`
                 }));
 
-                // STRICT METADATA SEARCH: Scan the full tree dataset array dynamically for strict structural markers
                 detectCompositeSignaturesFromTree(repositoryTreeData);
 
                 document.getElementById('itemCountBadge').innerText = repositoryTreeData.length;
@@ -345,18 +343,12 @@
             }
         }
 
-        // FIXED: Scans the entire tree array dynamically for accurate structural markers
         function detectCompositeSignaturesFromTree(treeNodes) {
-            const paths = treeNodes.map(n => n.path);
+            const paths = treeNodes.map(n => n.path.toLowerCase()); // Fixed to use lowercase bounds handling
             const badgeContainer = document.getElementById('badgeContainer');
             
-            // 1. Strict Check: A skills folder MUST contain a skill.json inside it to be verified
             activeSignatures.AGENTFORCE_SKILLS = paths.some(p => p.startsWith('skills/') && p.endsWith('skill.json'));
-            
-            // 2. Strict Check: Explicit Salesforce DX project configuration placement
             activeSignatures.SALESFORCE_DX = paths.includes('sfdx-project.json');
-            
-            // 3. Strict Check: Standard Node project configuration placement
             activeSignatures.NODE_JS = paths.includes('package.json');
             
             activeSignatures.GENERIC = !(activeSignatures.AGENTFORCE_SKILLS || activeSignatures.SALESFORCE_DX || activeSignatures.NODE_JS);
@@ -516,8 +508,10 @@
             }
         }
 
+        // FIXED: Using lowercase path verification parameters to handle mixed cases safely
         function renderCompositeSidebarWidgets(node, rawText) {
             const stackContainer = document.getElementById('widgetWorkspaceStack');
+            const lowerPath = node.path.toLowerCase();
             let compositeHtml = "";
 
             compositeHtml += `
@@ -530,7 +524,7 @@
                 </div>
             `;
 
-            if (activeSignatures.AGENTFORCE_SKILLS && node.path.startsWith('skills/')) {
+            if (activeSignatures.AGENTFORCE_SKILLS && lowerPath.startsWith('skills/')) {
                 const skillId = node.path.split('/')[1] || "target-skill";
                 compositeHtml += `
                     <div class="bg-slate-900 border border-emerald-800 rounded-lg p-3.5 shadow-md flex flex-col">
