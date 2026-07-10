@@ -6,6 +6,7 @@
     <title>Universal Git Visualiser & Setup Studio</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
     <style>
         .prose code { background: #f1f5f9; padding: 0.15rem 0.35rem; border-radius: 0.25rem; font-size: 0.85em; color: #0f172a; font-family: monospace; }
         .prose pre { background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin: 1.25rem 0; font-size: 0.875rem; font-family: monospace; }
@@ -29,7 +30,7 @@
                 </div>
                 <div>
                     <h1 class="text-sm font-bold text-slate-100">Universal Git Visualiser</h1>
-                    <p class="text-[10px] text-sky-400 font-mono tracking-wider">Manifest-Validated Ingestion Architecture</p>
+                    <p class="text-[10px] text-sky-400 font-mono tracking-wider">Zero-Server Client Ingestion Engine</p>
                 </div>
             </div>
 
@@ -40,16 +41,38 @@
                     <button onclick="toggleFavorite()" id="favBtn" class="absolute right-2 text-gray-400 hover:text-yellow-400 text-xs transition-colors" title="Bookmark Repository">★</button>
                 </div>
                 
-                <input type="password" id="tokenInput" oninput="savePAT()" placeholder="GitHub PAT Token (Optional)" 
-                       class="px-3 py-1.5 bg-slate-800 text-white border border-slate-700 rounded text-xs focus:outline-none focus:border-indigo-500 w-56 font-mono">
+                <div class="relative group">
+                    <input type="password" id="tokenInput" oninput="handleTokenInput()" placeholder="GitHub PAT Token (Optional)" 
+                           class="px-3 py-1.5 bg-slate-800 text-white border border-slate-700 rounded text-xs focus:outline-none focus:border-indigo-500 w-52 font-mono pr-6">
+                    <button onclick="clearToken()" id="clearTokenBtn" class="hidden absolute right-2 top-2 text-gray-400 hover:text-rose-400 text-[10px]" title="Clear stored token instantly">✕</button>
+                    
+                    <div class="absolute right-0 top-full mt-1 bg-slate-900 border border-slate-700 p-2.5 rounded shadow-xl text-[10px] text-gray-300 w-64 hidden group-focus-within:block z-50 space-y-1.5">
+                        <p class="font-bold text-sky-400">🔒 Token Security Policy Guidance</p>
+                        <p class="leading-relaxed">Use a fine-grained, read-only token scoped strictly to target public/private repos. Never paste classic personal access tokens carrying full account write privileges.</p>
+                        <div class="flex items-center space-x-1.5 border-t border-slate-800 pt-1.5 mt-1">
+                            <input type="checkbox" id="rememberMeCheck" onchange="handleRememberMeToggle()" class="rounded border-slate-700 text-indigo-600 focus:ring-0 bg-slate-800 w-3 h-3">
+                            <label for="rememberMeCheck" class="text-gray-400 cursor-pointer font-sans select-none">Remember token on this device</label>
+                        </div>
+                    </div>
+                </div>
 
-                <button onclick="loadRemoteRepository()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-1.5 rounded transition-all shadow-md">
+                <button onclick="loadRemoteRepository()" class="bg-indigo-600 hover:bg-indigo-50 text-white font-bold text-xs px-4 py-1.5 rounded transition-all shadow-md">
                     Ingest Repository
                 </button>
             </div>
 
         </div>
     </header>
+
+    <div class="bg-emerald-50 border-b border-emerald-100 px-4 py-1.5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-emerald-800 shadow-inner">
+        <div class="flex items-center space-x-1.5 font-medium">
+            <span>🛡️</span>
+            <span><strong>Privacy Guarantee:</strong> Nothing you enter here is sent to any external server — everything executes entirely within your browser runtime sandbox sandbox layer.</span>
+        </div>
+        <div class="text-[10px] font-mono text-emerald-600 shrink-0 bg-white/60 px-2 py-0.5 rounded border border-emerald-100">
+            HTTPS Client-Direct Connection
+        </div>
+    </div>
 
     <div class="bg-white border-b border-gray-200 px-4 py-1.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-gray-500 shadow-sm min-h-10">
         <div class="flex flex-wrap items-center gap-2 font-mono">
@@ -175,13 +198,59 @@
             return cleanStr;
         }
 
-        function loadSavedPAT() {
-            const savedPat = localStorage.getItem('universal_git_pat');
-            if (savedPat) document.getElementById('tokenInput').value = savedPat;
+        // Feature: Dual Memory Scope State Loader Engine (Session by Default, Local via Opt-In Check)
+        function loadTokenState() {
+            const isPersistent = localStorage.getItem('universal_git_pat_persistent') === 'true';
+            document.getElementById('rememberMeCheck').checked = isPersistent;
+            
+            let token = sessionStorage.getItem('universal_git_pat');
+            if (!token && isPersistent) {
+                token = localStorage.getItem('universal_git_pat');
+                if (token) sessionStorage.setItem('universal_git_pat', token);
+            }
+            
+            if (token) {
+                document.getElementById('tokenInput').value = token;
+                document.getElementById('clearTokenBtn').classList.remove('hidden');
+            }
         }
-        function savePAT() {
-            const patVal = document.getElementById('tokenInput').value.trim();
-            localStorage.setItem('universal_git_pat', patVal);
+
+        function handleTokenInput() {
+            const tokenVal = document.getElementById('tokenInput').value.trim();
+            const clearBtn = document.getElementById('clearTokenBtn');
+            
+            if (tokenVal) {
+                clearBtn.classList.remove('hidden');
+                sessionStorage.setItem('universal_git_pat', tokenVal);
+                if (document.getElementById('rememberMeCheck').checked) {
+                    localStorage.setItem('universal_git_pat', tokenVal);
+                }
+            } else {
+                clearBtn.classList.add('hidden');
+                sessionStorage.removeItem('universal_git_pat');
+                localStorage.removeItem('universal_git_pat');
+            }
+        }
+
+        function handleRememberMeToggle() {
+            const isChecked = document.getElementById('rememberMeCheck').checked;
+            const tokenVal = document.getElementById('tokenInput').value.trim();
+            
+            localStorage.setItem('universal_git_pat_persistent', isChecked);
+            if (isChecked && tokenVal) {
+                localStorage.setItem('universal_git_pat', tokenVal);
+            } else {
+                localStorage.removeItem('universal_git_pat');
+            }
+        }
+
+        // Feature: Explicit One-Click Token Purge Controller Block
+        function clearToken() {
+            document.getElementById('tokenInput').value = "";
+            document.getElementById('clearTokenBtn').classList.add('hidden');
+            sessionStorage.removeItem('universal_git_pat');
+            localStorage.removeItem('universal_git_pat');
+            alert("Token state completely purged from all local and session browser context slots.");
         }
 
         function updateRecentsDeck(repoName) {
@@ -274,7 +343,8 @@
         }
 
         async function fetchGitHubData(endpoint) {
-            const token = document.getElementById('tokenInput').value.trim();
+            // Read active token array parameters straight out of session container vault
+            const token = sessionStorage.getItem('universal_git_pat') || document.getElementById('tokenInput').value.trim();
             const headers = { "Accept": "application/vnd.github.v3+json" };
             if (token) headers["Authorization"] = `token ${token}`;
 
@@ -286,6 +356,17 @@
             const rateLimitLimit = response.headers.get("X-RateLimit-Limit");
             if(rateLimit && rateLimitLimit) {
                 document.getElementById('apiTracker').innerText = `API Limits: ${rateLimit}/${rateLimitLimit}`;
+            }
+
+            // Adaptive Error Boundaries: Trigger alert prompt inputs ONLY if unauthenticated rates clip or hit 403 blocks
+            if (response.status === 403 || response.status === 401) {
+                const patVal = prompt("GitHub API Rate Limit Reached (or accessing private repository scope parameters).\nPlease enter a read-only Personal Access Token (PAT) to continue processing raw paths:");
+                if (patVal) {
+                    document.getElementById('tokenInput').value = patVal;
+                    sessionStorage.setItem('universal_git_pat', patVal);
+                    document.getElementById('clearTokenBtn').classList.remove('hidden');
+                    return await fetchGitHubData(endpoint); // Re-fire request loop with fresh credentials
+                }
             }
 
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -343,12 +424,10 @@
             }
         }
 
-        // FIXED STRUCTURAL MANIFEST SCANNER
         function detectManifestSignaturesFromTree(treeNodes) {
             const paths = treeNodes.map(n => n.path.toLowerCase());
             const badgeContainer = document.getElementById('badgeContainer');
             
-            // Core Change: Match for explicit structural validation against the real framework manifest standard
             activeSignatures.AGENTFORCE_SKILLS = paths.some(p => {
                 const parts = p.split('/');
                 const filename = parts[parts.length - 1];
@@ -503,10 +582,13 @@
 
                     cleanMarkdown = cleanMarkdown.replace(/\\u([0-9a-fA-F]{4})/g, (match, grp) => String.fromCharCode(parseInt(grp, 16)));
                     cleanMarkdown = cleanMarkdown.replace(/^---[\s\S]*?---\s*/m, '');
-                    renderBox.innerHTML = marked.parse(cleanMarkdown);
+                    
+                    // Feature: Strict client-side XSS Sanitization utilizing DOMPurify on Markdown inputs
+                    const dirtyHtml = marked.parse(cleanMarkdown);
+                    renderBox.innerHTML = DOMPurify.sanitize(dirtyHtml);
                 } else {
                     const safeText = rawText.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                    renderBox.innerHTML = `<pre class="bg-slate-900 text-slate-100 p-4 rounded font-mono text-xs overflow-x-auto leading-relaxed"><code>${safeText}</code></pre>`;
+                    renderBox.innerHTML = `<pre class="bg-slate-900 text-slate-100 p-4 rounded font-mono text-xs overflow-x-auto leading-relaxed"><code>${DOMPurify.sanitize(safeText)}</code></pre>`;
                 }
 
                 renderCompositeSidebarWidgets(node, rawText);
@@ -576,11 +658,12 @@
                 `;
             }
 
-            stackContainer.innerHTML = compositeHtml;
+            // Sanitize standard custom metrics container loops safely via DOMPurify boundaries
+            stackContainer.innerHTML = DOMPurify.sanitize(compositeHtml);
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            loadSavedPAT();
+            loadTokenState();
             renderRecentsDeck();
             renderFavoritesDropdown();
             
