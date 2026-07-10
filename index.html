@@ -29,18 +29,18 @@
                 </div>
                 <div>
                     <h1 class="text-sm font-bold text-slate-100">Universal Git Visualiser</h1>
-                    <p class="text-[10px] text-sky-400 font-mono tracking-wider">Enhanced Client-Side Ingestion Architecture</p>
+                    <p class="text-[10px] text-sky-400 font-mono tracking-wider">State-Preserving Ingestion Architecture</p>
                 </div>
             </div>
 
             <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto lg:justify-end">
                 <div class="relative flex items-center bg-slate-800 rounded border border-slate-700 w-64">
-                    <input type="text" id="repoInput" value="forcedotcom/sf-skills" placeholder="owner/repository or GitHub URL" 
+                    <input type="text" id="repoInput" value="" placeholder="Enter owner/repository or GitHub URL" 
                            class="w-full px-3 py-1.5 bg-transparent text-white text-xs focus:outline-none font-mono pr-7">
                     <button onclick="toggleFavorite()" id="favBtn" class="absolute right-2 text-gray-400 hover:text-yellow-400 text-xs transition-colors" title="Bookmark Repository">★</button>
                 </div>
                 
-                <input type="password" id="tokenInput" oninput="savePAT()" placeholder="GitHub PAT Token (Saved Automatically)" 
+                <input type="password" id="tokenInput" oninput="savePAT()" placeholder="GitHub PAT Token (Optional)" 
                        class="px-3 py-1.5 bg-slate-800 text-white border border-slate-700 rounded text-xs focus:outline-none focus:border-indigo-500 w-56 font-mono">
 
                 <button onclick="loadRemoteRepository()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-1.5 rounded transition-all shadow-md">
@@ -61,8 +61,7 @@
             </span>
         </div>
         
-        <div id="recentDeckContainer" class="flex flex-wrap items-center gap-1.5 text-[10px] font-mono">
-            </div>
+        <div id="recentDeckContainer" class="flex flex-wrap items-center gap-1.5 text-[10px] font-mono"></div>
 
         <div id="apiTracker" class="text-[10px] font-mono text-gray-400 shrink-0">
             Engine Standby Mode
@@ -95,7 +94,7 @@
                 </div>
                 <div>
                     <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Filter Repository Files</label>
-                    <input type="text" id="searchInput" oninput="filterSkills()" placeholder="Search keywords or file formats..." 
+                    <input type="text" id="searchInput" oninput="filterSkills()" placeholder="Search keywords..." 
                            class="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:bg-white transition-all">
                 </div>
             </div>
@@ -105,7 +104,7 @@
                     <span class="text-[11px] font-bold uppercase tracking-wider text-gray-500">Ecosystem Explorer Tree</span>
                 </div>
                 <div id="treeLoadingContainer" class="overflow-y-auto flex-1 max-h-[58vh] bg-white text-xs">
-                    <div class="p-8 text-center text-gray-400 italic">Click "Ingest Repository" to read remote infrastructure tree nodes...</div>
+                    <div class="p-8 text-center text-gray-400 italic">Enter a public repository profile track to assemble interactive workspace trees...</div>
                 </div>
             </div>
         </section>
@@ -170,37 +169,30 @@
         let activeEcosystemSignature = "GENERIC";
         let activeDefaultBranch = "main";
 
-        // Feature 1: Intelligent RegEx Repository Signature Extraction
         function parseRepositoryInput(inputString) {
             let cleanStr = inputString.trim();
-            // Match handles standard URLs, tree listings, and raw content targets cleanly
             const regex = /(?:https?:\/\/github\.com\/)?([a-zA-Z0-9._-]+)\/([a-zA-Z0-9._-]+)(?:\/(?:tree|blob)\/[^\/]+)?/i;
             const match = cleanStr.match(regex);
             if (match && match[1] && match[2]) {
-                // Strip lingering trailing formatting extensions if accidentally appended
                 return `${match[1]}/${match[2].replace(/\.git$/i, '')}`;
             }
             return cleanStr;
         }
 
-        // Feature 2: LocalStorage Token Persistence Hooks
         function loadSavedPAT() {
             const savedPat = localStorage.getItem('universal_git_pat');
-            if (savedPat) {
-                document.getElementById('tokenInput').value = savedPat;
-            }
+            if (savedPat) document.getElementById('tokenInput').value = savedPat;
         }
         function savePAT() {
             const patVal = document.getElementById('tokenInput').value.trim();
             localStorage.setItem('universal_git_pat', patVal);
         }
 
-        // Feature 4: "Recent Repositories" Array Manager Deck
         function updateRecentsDeck(repoName) {
             let recents = JSON.parse(localStorage.getItem('git_visualiser_recents') || '[]');
             recents = recents.filter(r => r.toLowerCase() !== repoName.toLowerCase());
             recents.unshift(repoName);
-            recents = recents.slice(0, 4); // Clamp to 4 visual tags max
+            recents = recents.slice(0, 4);
             localStorage.setItem('git_visualiser_recents', JSON.stringify(recents));
             renderRecentsDeck();
         }
@@ -222,7 +214,6 @@
             loadRemoteRepository();
         }
 
-        // Feature 5: Bookmarks & Favorites Panel Controls
         function renderFavoritesDropdown() {
             const dropdown = document.getElementById('favDropdown');
             const favs = JSON.parse(localStorage.getItem('git_visualiser_favs') || '[]');
@@ -268,25 +259,24 @@
             loadRemoteRepository();
         }
 
-        // Feature 3: URL Param Deep-Linking Generator Action
         function checkUrlDeepLinks() {
             const params = new URLSearchParams(window.location.search);
             const targetRepo = params.get('repo');
             if (targetRepo) {
                 document.getElementById('repoInput').value = targetRepo;
-                loadRemoteRepository();
+                return targetRepo;
             }
+            return null;
         }
 
         function copyShareLink() {
             if(!currentOwnerRepo) return;
             const shareUrl = `${window.location.origin}${window.location.pathname}?repo=${currentOwnerRepo}`;
             navigator.clipboard.writeText(shareUrl).then(() => {
-                alert("Deep-link bookmark copied directly to clipboard!");
+                alert("Deep-link copied directly to clipboard!");
             });
         }
 
-        // Core API Request Pipeline Engine
         async function fetchGitHubData(endpoint) {
             const token = document.getElementById('tokenInput').value.trim();
             const headers = { "Accept": "application/vnd.github.v3+json" };
@@ -308,15 +298,16 @@
 
         async function loadRemoteRepository() {
             const rawValue = document.getElementById('repoInput').value.trim();
-            const repoValue = parseRepositoryInput(rawValue);
+            if(!rawValue) return;
             
+            const repoValue = parseRepositoryInput(rawValue);
             if (!repoValue || !repoValue.includes('/')) {
-                alert("Please match a valid 'owner/repository' layout sequence pattern framework.");
+                alert("Please match a valid 'owner/repository' layout sequence.");
                 return;
             }
 
             currentOwnerRepo = repoValue;
-            document.getElementById('repoInput').value = repoValue; // Set parsed clean text value back to entry form field box
+            document.getElementById('repoInput').value = repoValue;
             document.getElementById('currentRepoLabel').innerText = repoValue;
             updateFavoriteStarState();
             
@@ -552,12 +543,28 @@
             propsBlock.innerHTML = customPropertiesHtml;
         }
 
-        // Initialize App Hook Sequences safely on window lifecycle completion
+        // Adaptive Entry Loading Manager Logic Block
         window.addEventListener('DOMContentLoaded', () => {
             loadSavedPAT();
             renderRecentsDeck();
             renderFavoritesDropdown();
-            checkUrlDeepLinks();
+            
+            // Check for explicit share link query keys first
+            const deepLinkRepo = checkUrlDeepLinks();
+            
+            if (deepLinkRepo) {
+                loadRemoteRepository();
+            } else {
+                // FALLBACK SMART SEQUENCING: Look for last used active repo entry item, or fallback to the most recent bookmarked item
+                const recents = JSON.parse(localStorage.getItem('git_visualiser_recents') || '[]');
+                const favs = JSON.parse(localStorage.getItem('git_visualiser_favs') || '[]');
+                const fallbackRepo = recents[0] || favs[0] || "";
+                
+                if (fallbackRepo) {
+                    document.getElementById('repoInput').value = fallbackRepo;
+                    loadRemoteRepository();
+                }
+            }
         });
     </script>
 </body>
