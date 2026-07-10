@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Universal Ecosystem Console & Agentforce Setup Studio</title>
+    <title>Universal Git Visualiser & Setup Studio</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
@@ -28,17 +28,20 @@
                     UNIV
                 </div>
                 <div>
-                    <h1 class="text-sm font-bold text-slate-100">Universal Repository Ecosystem Visualizer</h1>
-                    <p class="text-[10px] text-sky-400 font-mono tracking-wider">Dynamic Client-Side Ingestion Architecture</p>
+                    <h1 class="text-sm font-bold text-slate-100">Universal Git Visualiser</h1>
+                    <p class="text-[10px] text-sky-400 font-mono tracking-wider">Enhanced Client-Side Ingestion Architecture</p>
                 </div>
             </div>
 
             <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto lg:justify-end">
-                <input type="text" id="repoInput" value="forcedotcom/sf-skills" placeholder="owner/repository" 
-                       class="px-3 py-1.5 bg-slate-800 text-white border border-slate-700 rounded text-xs focus:outline-none focus:border-indigo-500 w-48 font-mono">
+                <div class="relative flex items-center bg-slate-800 rounded border border-slate-700 w-64">
+                    <input type="text" id="repoInput" value="forcedotcom/sf-skills" placeholder="owner/repository or GitHub URL" 
+                           class="w-full px-3 py-1.5 bg-transparent text-white text-xs focus:outline-none font-mono pr-7">
+                    <button onclick="toggleFavorite()" id="favBtn" class="absolute right-2 text-gray-400 hover:text-yellow-400 text-xs transition-colors" title="Bookmark Repository">★</button>
+                </div>
                 
-                <input type="password" id="tokenInput" placeholder="GitHub PAT Token (Optional)" 
-                       class="px-3 py-1.5 bg-slate-800 text-white border border-slate-700 rounded text-xs focus:outline-none focus:border-indigo-500 w-40 font-mono">
+                <input type="password" id="tokenInput" oninput="savePAT()" placeholder="GitHub PAT Token (Saved Automatically)" 
+                       class="px-3 py-1.5 bg-slate-800 text-white border border-slate-700 rounded text-xs focus:outline-none focus:border-indigo-500 w-56 font-mono">
 
                 <button onclick="loadRemoteRepository()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-1.5 rounded transition-all shadow-md">
                     Ingest Repository
@@ -48,13 +51,20 @@
         </div>
     </header>
 
-    <div class="bg-white border-b border-gray-200 px-4 h-10 flex items-center justify-between text-xs text-gray-500 shadow-sm">
-        <div class="flex items-center space-x-2 font-mono">
+    <div class="bg-white border-b border-gray-200 px-4 py-1.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-gray-500 shadow-sm min-h-10">
+        <div class="flex flex-wrap items-center gap-2 font-mono">
             <span>Target Repo: <strong id="currentRepoLabel" class="text-gray-700">None</strong></span>
             <span>•</span>
             <span>Ecosystem Profile: <span id="ecosystemBadge" class="bg-gray-100 text-gray-700 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">Unknown</span></span>
+            <span id="shareContainer" class="hidden pl-2">
+                <button onclick="copyShareLink()" class="bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-600 px-2 py-0.5 rounded text-[10px] font-bold transition-all">📋 Copy Deep-Link</button>
+            </span>
         </div>
-        <div id="apiTracker" class="text-[10px] font-mono text-gray-400">
+        
+        <div id="recentDeckContainer" class="flex flex-wrap items-center gap-1.5 text-[10px] font-mono">
+            </div>
+
+        <div id="apiTracker" class="text-[10px] font-mono text-gray-400 shrink-0">
             Engine Standby Mode
         </div>
     </div>
@@ -76,17 +86,25 @@
                 </div>
             </div>
 
-            <div class="bg-white p-3.5 rounded-lg border border-gray-200 shadow-sm">
-                <label class="block text-[11px] font-bold uppercase text-gray-500 mb-1">Filter Repository Files</label>
-                <input type="text" id="searchInput" oninput="filterSkills()" placeholder="Search keywords..." 
-                       class="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:bg-white transition-all">
+            <div class="bg-white p-3.5 rounded-lg border border-gray-200 shadow-sm space-y-2">
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Bookmarked Repositories</label>
+                    <select id="favDropdown" onchange="selectFavRepo(this.value)" class="w-full px-2 py-1 bg-gray-50 border border-gray-300 rounded text-xs focus:outline-none">
+                        <option value="">-- No Bookmarks Saved --</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Filter Repository Files</label>
+                    <input type="text" id="searchInput" oninput="filterSkills()" placeholder="Search keywords or file formats..." 
+                           class="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:bg-white transition-all">
+                </div>
             </div>
 
             <div class="bg-white rounded-lg border border-gray-200 shadow-sm flex-1 flex flex-col overflow-hidden min-h-[400px]">
                 <div class="px-3 py-2 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
                     <span class="text-[11px] font-bold uppercase tracking-wider text-gray-500">Ecosystem Explorer Tree</span>
                 </div>
-                <div id="treeLoadingContainer" class="overflow-y-auto flex-1 max-h-[62vh] bg-white text-xs">
+                <div id="treeLoadingContainer" class="overflow-y-auto flex-1 max-h-[58vh] bg-white text-xs">
                     <div class="p-8 text-center text-gray-400 italic">Click "Ingest Repository" to read remote infrastructure tree nodes...</div>
                 </div>
             </div>
@@ -152,6 +170,123 @@
         let activeEcosystemSignature = "GENERIC";
         let activeDefaultBranch = "main";
 
+        // Feature 1: Intelligent RegEx Repository Signature Extraction
+        function parseRepositoryInput(inputString) {
+            let cleanStr = inputString.trim();
+            // Match handles standard URLs, tree listings, and raw content targets cleanly
+            const regex = /(?:https?:\/\/github\.com\/)?([a-zA-Z0-9._-]+)\/([a-zA-Z0-9._-]+)(?:\/(?:tree|blob)\/[^\/]+)?/i;
+            const match = cleanStr.match(regex);
+            if (match && match[1] && match[2]) {
+                // Strip lingering trailing formatting extensions if accidentally appended
+                return `${match[1]}/${match[2].replace(/\.git$/i, '')}`;
+            }
+            return cleanStr;
+        }
+
+        // Feature 2: LocalStorage Token Persistence Hooks
+        function loadSavedPAT() {
+            const savedPat = localStorage.getItem('universal_git_pat');
+            if (savedPat) {
+                document.getElementById('tokenInput').value = savedPat;
+            }
+        }
+        function savePAT() {
+            const patVal = document.getElementById('tokenInput').value.trim();
+            localStorage.setItem('universal_git_pat', patVal);
+        }
+
+        // Feature 4: "Recent Repositories" Array Manager Deck
+        function updateRecentsDeck(repoName) {
+            let recents = JSON.parse(localStorage.getItem('git_visualiser_recents') || '[]');
+            recents = recents.filter(r => r.toLowerCase() !== repoName.toLowerCase());
+            recents.unshift(repoName);
+            recents = recents.slice(0, 4); // Clamp to 4 visual tags max
+            localStorage.setItem('git_visualiser_recents', JSON.stringify(recents));
+            renderRecentsDeck();
+        }
+
+        function renderRecentsDeck() {
+            const container = document.getElementById('recentDeckContainer');
+            const recents = JSON.parse(localStorage.getItem('git_visualiser_recents') || '[]');
+            if(recents.length === 0) {
+                container.innerHTML = "";
+                return;
+            }
+            container.innerHTML = `<span class="text-gray-400">Recent:</span>` + recents.map(r => `
+                <button onclick="quickLoadRepo('${r}')" class="bg-slate-100 hover:bg-indigo-50 border border-gray-200 text-gray-600 hover:text-indigo-600 font-bold px-2 py-0.5 rounded transition-all truncate max-w-[140px]">${r.split('/')[1]}</button>
+            `).join('');
+        }
+
+        function quickLoadRepo(repoName) {
+            document.getElementById('repoInput').value = repoName;
+            loadRemoteRepository();
+        }
+
+        // Feature 5: Bookmarks & Favorites Panel Controls
+        function renderFavoritesDropdown() {
+            const dropdown = document.getElementById('favDropdown');
+            const favs = JSON.parse(localStorage.getItem('git_visualiser_favs') || '[]');
+            
+            if(favs.length === 0) {
+                dropdown.innerHTML = `<option value="">-- No Bookmarks Saved --</option>`;
+                return;
+            }
+            dropdown.innerHTML = `<option value="">-- Select a Bookmark (${favs.length}) --</option>` + favs.sort().map(f => `
+                <option value="${f}">${f}</option>
+            `).join('');
+        }
+
+        function toggleFavorite() {
+            if(!currentOwnerRepo) return;
+            let favs = JSON.parse(localStorage.getItem('git_visualiser_favs') || '[]');
+            const btn = document.getElementById('favBtn');
+            
+            if(favs.includes(currentOwnerRepo)) {
+                favs = favs.filter(f => f !== currentOwnerRepo);
+                btn.className = "absolute right-2 text-gray-400 hover:text-yellow-400 text-xs transition-colors";
+            } else {
+                favs.push(currentOwnerRepo);
+                btn.className = "absolute right-2 text-yellow-500 text-xs transition-colors";
+            }
+            localStorage.setItem('git_visualiser_favs', JSON.stringify(favs));
+            renderFavoritesDropdown();
+        }
+
+        function updateFavoriteStarState() {
+            const btn = document.getElementById('favBtn');
+            const favs = JSON.parse(localStorage.getItem('git_visualiser_favs') || '[]');
+            if(favs.includes(currentOwnerRepo)) {
+                btn.className = "absolute right-2 text-yellow-500 text-xs transition-colors";
+            } else {
+                btn.className = "absolute right-2 text-gray-400 hover:text-yellow-400 text-xs transition-colors";
+            }
+        }
+
+        function selectFavRepo(val) {
+            if(!val) return;
+            document.getElementById('repoInput').value = val;
+            loadRemoteRepository();
+        }
+
+        // Feature 3: URL Param Deep-Linking Generator Action
+        function checkUrlDeepLinks() {
+            const params = new URLSearchParams(window.location.search);
+            const targetRepo = params.get('repo');
+            if (targetRepo) {
+                document.getElementById('repoInput').value = targetRepo;
+                loadRemoteRepository();
+            }
+        }
+
+        function copyShareLink() {
+            if(!currentOwnerRepo) return;
+            const shareUrl = `${window.location.origin}${window.location.pathname}?repo=${currentOwnerRepo}`;
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                alert("Deep-link bookmark copied directly to clipboard!");
+            });
+        }
+
+        // Core API Request Pipeline Engine
         async function fetchGitHubData(endpoint) {
             const token = document.getElementById('tokenInput').value.trim();
             const headers = { "Accept": "application/vnd.github.v3+json" };
@@ -164,7 +299,7 @@
             const rateLimit = response.headers.get("X-RateLimit-Remaining");
             const rateLimitLimit = response.headers.get("X-RateLimit-Limit");
             if(rateLimit && rateLimitLimit) {
-                document.getElementById('apiTracker').innerText = `GitHub API Rate Remaining: ${rateLimit}/${rateLimitLimit}`;
+                document.getElementById('apiTracker').innerText = `API Limits: ${rateLimit}/${rateLimitLimit}`;
             }
 
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -172,16 +307,21 @@
         }
 
         async function loadRemoteRepository() {
-            const repoValue = document.getElementById('repoInput').value.trim();
+            const rawValue = document.getElementById('repoInput').value.trim();
+            const repoValue = parseRepositoryInput(rawValue);
+            
             if (!repoValue || !repoValue.includes('/')) {
-                alert("Please match an 'owner/repository' pattern format.");
+                alert("Please match a valid 'owner/repository' layout sequence pattern framework.");
                 return;
             }
 
             currentOwnerRepo = repoValue;
+            document.getElementById('repoInput').value = repoValue; // Set parsed clean text value back to entry form field box
             document.getElementById('currentRepoLabel').innerText = repoValue;
+            updateFavoriteStarState();
+            
             const treeContainer = document.getElementById('treeLoadingContainer');
-            treeContainer.innerHTML = `<div class="p-12 text-center text-gray-500"><span class="animate-pulse font-mono block">Analyzing branch configurations...</span></div>`;
+            treeContainer.innerHTML = `<div class="p-12 text-center text-gray-500"><span class="animate-pulse font-mono block">Analyzing remote tree architecture...</span></div>`;
 
             try {
                 const repoMetadata = await fetchGitHubData("");
@@ -200,8 +340,8 @@
                 }));
 
                 document.getElementById('itemCountBadge').innerText = repositoryTreeData.length;
+                document.getElementById('shareContainer').classList.remove('hidden');
                 
-                // Reset expanded states and default top-level folders to open
                 expandedFolders = {};
                 repositoryTreeData.forEach(node => {
                     if (node.type === 'dir' && !node.path.includes('/')) {
@@ -209,10 +349,11 @@
                     }
                 });
 
+                updateRecentsDeck(currentOwnerRepo);
                 filterSkills();
             } catch (err) {
                 console.error(err);
-                treeContainer.innerHTML = `<div class="p-6 text-center text-rose-600 font-medium">Ingestion failure. Check network connectivity or API token authorizations.</div>`;
+                treeContainer.innerHTML = `<div class="p-6 text-center text-rose-600 font-medium">Ingestion failure. Check credentials, token clearances, or path values.</div>`;
             }
         }
 
@@ -245,7 +386,6 @@
             filterSkills();
         }
 
-        // Builds a nested hierarchy explorer tree recursively
         function renderNestedTree(nodes) {
             const container = document.getElementById('treeLoadingContainer');
             if (nodes.length === 0) {
@@ -275,7 +415,6 @@
                 }
             });
 
-            // Alphabetically sort directory nodes above files
             const sortNodes = (a, b) => {
                 if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
                 return a.name.localeCompare(b.name);
@@ -292,8 +431,8 @@
                             <div class="w-full">
                                 <div onclick="toggleFolder('${item.path}')" style="padding-left: ${paddingLeft}px;"
                                      class="py-1.5 pr-3 hover:bg-slate-100 flex items-center space-x-1.5 text-gray-700 font-medium cursor-pointer transition-colors select-none">
-                                    <svg class="w-3 h-3 text-gray-400 transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
+                                    <svg class="w-3 h-3 text-gray-400 transform transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M6 6L14 10L6 14V6Z"/>
                                     </svg>
                                     <span class="truncate">📁 ${item.name}</span>
                                 </div>
@@ -319,8 +458,6 @@
 
         function filterSkills() {
             const query = document.getElementById('searchInput').value.toLowerCase();
-            
-            // If searching, automatically expand matching folder visibility scopes
             if (query) {
                 repositoryTreeData.forEach(node => {
                     if (node.type === 'dir' && node.path.toLowerCase().includes(query)) {
@@ -333,7 +470,6 @@
                     }
                 });
             }
-
             const filtered = repositoryTreeData.filter(n => n.path.toLowerCase().includes(query) || n.name.toLowerCase().includes(query));
             renderNestedTree(filtered);
         }
@@ -416,7 +552,13 @@
             propsBlock.innerHTML = customPropertiesHtml;
         }
 
-        window.addEventListener('DOMContentLoaded', loadRemoteRepository);
+        // Initialize App Hook Sequences safely on window lifecycle completion
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSavedPAT();
+            renderRecentsDeck();
+            renderFavoritesDropdown();
+            checkUrlDeepLinks();
+        });
     </script>
 </body>
 </html>
