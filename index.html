@@ -17,6 +17,15 @@
         .prose p { margin-bottom: 1rem; line-height: 1.7; font-size: 0.95rem; color: #334155; }
         .prose ul, .prose ol { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; font-size: 0.95rem; color: #334155; }
         .prose strong { color: #0f172a; font-weight: 600; }
+        
+        /* Strict CSS overrides to explicitly guarantee left alignment inside terminal containers */
+        .terminal-code-block {
+            text-align: left !important;
+            direction: ltr !important;
+            white-space: pre !important;
+            overflow-x: auto !important;
+            display: block !important;
+        }
     </style>
 </head>
 <body class="bg-[#f3f4f6] text-[#181818] font-sans min-h-screen flex flex-col antialiased">
@@ -592,7 +601,6 @@
             }
         }
 
-        // Centralized Event Delegation framework handles text copies with structured feedback blocks safely
         function triggerActionCopy(btnElement) {
             const targetString = btnElement.getAttribute('data-command');
             navigator.clipboard.writeText(targetString).then(() => {
@@ -613,7 +621,7 @@
             }).catch(e => console.error("Clipboard access denied:", e));
         }
 
-        // FIXED: Rebuilt terminal cards to prevent layout compression and isolation bugs
+        // FIXED: Enforced crisp left-to-right text layout vectors across terminal output blocks
         function renderCompositeSidebarWidgets(node, rawText) {
             const stackContainer = document.getElementById('widgetWorkspaceStack');
             const lowerPath = node.path.toLowerCase();
@@ -633,10 +641,10 @@
                 const skillId = node.path.split('/')[1] || "target-skill";
                 const cmdStr = `npx skills add ${currentOwnerRepo}/skills/${skillId}`;
                 compositeHtml += `
-                    <div class="bg-slate-900 border border-emerald-800 rounded-lg p-3.5 shadow-md flex flex-col space-y-2">
+                    <div class="bg-slate-900 border border-emerald-800 rounded-lg p-3.5 shadow-md flex flex-col space-y-2 max-w-full overflow-hidden">
                         <span class="text-[9px] font-bold tracking-widest text-emerald-400 uppercase block">Agentforce Skill Registry Hook</span>
-                        <div class="bg-black text-gray-300 font-mono text-xs p-3 rounded border border-gray-800 shadow-inner overflow-x-auto whitespace-pre font-medium text-gray-100">
-                            <span class="text-emerald-500 font-bold select-none">$</span> ${cmdStr}
+                        <div class="bg-black text-gray-300 font-mono text-xs p-3 rounded border border-gray-800 shadow-inner overflow-x-auto text-left direction-ltr block w-full leading-relaxed font-semibold text-gray-100">
+                            <span class="text-emerald-500 font-bold select-none text-left">$</span> <span class="terminal-code-block">${cmdStr}</span>
                         </div>
                         <button onclick="triggerActionCopy(this)" data-command="${cmdStr}" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-gray-400 hover:text-white font-medium text-xs py-1.5 px-3 rounded flex items-center justify-center space-x-1.5 transition-all select-none shadow-sm">
                             <span class="copy-status-icon">📋</span>
@@ -650,10 +658,10 @@
             if (activeSignatures.SALESFORCE_DX) {
                 const cmdStr = `sf project deploy start --manifest manifest/package.xml`;
                 compositeHtml += `
-                    <div class="bg-slate-900 border border-sky-800 rounded-lg p-3.5 shadow-md flex flex-col space-y-2">
+                    <div class="bg-slate-900 border border-sky-800 rounded-lg p-3.5 shadow-md flex flex-col space-y-2 max-w-full overflow-hidden">
                         <span class="text-[9px] font-bold tracking-widest text-sky-400 uppercase block">Salesforce DX CLI Deploy Engine</span>
-                        <div class="bg-black text-gray-300 font-mono text-xs p-3 rounded border border-gray-800 shadow-inner overflow-x-auto whitespace-pre font-medium text-gray-100">
-                            <span class="text-sky-500 font-bold select-none">$</span> ${cmdStr}
+                        <div class="bg-black text-gray-300 font-mono text-xs p-3 rounded border border-gray-800 shadow-inner overflow-x-auto text-left direction-ltr block w-full leading-relaxed font-semibold text-gray-100">
+                            <span class="text-sky-500 font-bold select-none text-left">$</span> <span class="terminal-code-block">${cmdStr}</span>
                         </div>
                         <button onclick="triggerActionCopy(this)" data-command="${cmdStr}" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-gray-400 hover:text-white font-medium text-xs py-1.5 px-3 rounded flex items-center justify-center space-x-1.5 transition-all select-none shadow-sm">
                             <span class="copy-status-icon">📋</span>
@@ -667,10 +675,10 @@
             if (activeSignatures.GENERIC || (!activeSignatures.AGENTFORCE_SKILLS && !activeSignatures.SALESFORCE_DX)) {
                 const cmdStr = `git clone https://github.com/${currentOwnerRepo}.git`;
                 compositeHtml += `
-                    <div class="bg-slate-900 border border-gray-800 rounded-lg p-3.5 shadow-md flex flex-col space-y-2">
+                    <div class="bg-slate-900 border border-gray-800 rounded-lg p-3.5 shadow-md flex flex-col space-y-2 max-w-full overflow-hidden">
                         <span class="text-[9px] font-bold tracking-widest text-indigo-400 uppercase block">Git Repository Clone Target</span>
-                        <div class="bg-black text-gray-300 font-mono text-xs p-3 rounded border border-gray-800 shadow-inner overflow-x-auto whitespace-pre font-medium text-gray-100">
-                            <span class="text-indigo-400 font-bold select-none">$</span> ${cmdStr}
+                        <div class="bg-black text-gray-300 font-mono text-xs p-3 rounded border border-gray-800 shadow-inner overflow-x-auto text-left direction-ltr block w-full leading-relaxed font-semibold text-gray-100">
+                            <span class="text-indigo-400 font-bold select-none text-left">$</span> <span class="terminal-code-block">${cmdStr}</span>
                         </div>
                         <button onclick="triggerActionCopy(this)" data-command="${cmdStr}" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-gray-400 hover:text-white font-medium text-xs py-1.5 px-3 rounded flex items-center justify-center space-x-1.5 transition-all select-none shadow-sm">
                             <span class="copy-status-icon">📋</span>
