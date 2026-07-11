@@ -17,18 +17,9 @@
         .prose p { margin-bottom: 1rem; line-height: 1.7; font-size: 0.95rem; color: #334155; }
         .prose ul, .prose ol { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; font-size: 0.95rem; color: #334155; }
         .prose strong { color: #0f172a; font-weight: 600; }
-        
-        /* Strict CSS overrides to explicitly guarantee left alignment inside terminal containers */
-        .terminal-code-block {
-            text-align: left !important;
-            direction: ltr !important;
-            white-space: pre !important;
-            overflow-x: auto !important;
-            display: block !important;
-        }
     </style>
 </head>
-<body class="bg-[#f3f4f6] text-[#181818] font-sans min-h-screen flex flex-col antialiased">
+<body class="bg-[#f3f4f6] text-[#181818] font-sans min-h-screen flex flex-col antialiased relative">
 
     <header class="bg-[#1b253a] text-white border-b border-[#0f172a] sticky top-0 z-50 shadow-md px-4 py-3">
         <div class="max-w-[1600px] mx-auto flex flex-col lg:flex-row items-center justify-between gap-4">
@@ -181,6 +172,11 @@
             </div>
         </section>
     </main>
+
+    <div id="toastNotification" class="fixed bottom-5 right-5 bg-slate-900 text-white text-xs font-medium py-2.5 px-4 rounded-lg shadow-xl border border-slate-700 flex items-center space-x-2 translate-y-20 opacity-0 pointer-events-none transition-all duration-300 z-50">
+        <span class="text-emerald-400 font-bold">✓</span>
+        <span id="toastMessage">Command copied to clipboard!</span>
+    </div>
 
     <script>
         let currentOwnerRepo = "";
@@ -345,7 +341,7 @@
             if(!currentOwnerRepo) return;
             const shareUrl = `${window.location.origin}${window.location.pathname}?repo=${currentOwnerRepo}`;
             navigator.clipboard.writeText(shareUrl).then(() => {
-                alert("Deep-link copied directly to clipboard!");
+                showToastNotification("Deep-link copied directly to clipboard!");
             });
         }
 
@@ -601,27 +597,36 @@
             }
         }
 
-        function triggerActionCopy(btnElement) {
-            const targetString = btnElement.getAttribute('data-command');
-            navigator.clipboard.writeText(targetString).then(() => {
-                const textNode = btnElement.querySelector('.copy-status-text');
-                const iconNode = btnElement.querySelector('.copy-status-icon');
-                
-                textNode.innerHTML = "Copied to clipboard!";
-                btnElement.classList.remove('bg-slate-800', 'text-gray-400', 'hover:text-white', 'hover:bg-slate-700');
-                btnElement.classList.add('bg-emerald-950', 'text-emerald-400', 'border-emerald-800');
-                if (iconNode) iconNode.innerHTML = "✓";
-                
-                setTimeout(() => {
-                    textNode.innerHTML = "Copy";
-                    btnElement.classList.remove('bg-emerald-950', 'text-emerald-400', 'border-emerald-800');
-                    btnElement.classList.add('bg-slate-800', 'text-gray-400', 'hover:text-white', 'hover:bg-slate-700');
-                    if (iconNode) iconNode.innerHTML = "📋";
-                }, 2000);
-            }).catch(e => console.error("Clipboard access denied:", e));
+        // Self-Disappearing Toast Engine Notification Pipeline
+        function showToastNotification(messageText) {
+            const toast = document.getElementById('toastNotification');
+            document.getElementById('toastMessage').innerText = messageText;
+            
+            // Slide up and fade in view bounds
+            toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            
+            setTimeout(() => {
+                // Slide back down out of view bounds safely
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+            }, 2500);
         }
 
-        // FIXED: Enforced crisp left-to-right text layout vectors across terminal output blocks
+        // Centralized Event Delegation framework handles text copies cleanly outside the HTML string injection template
+        document.getElementById('widgetWorkspaceStack').addEventListener('click', function(e) {
+            const copyBtn = e.target.closest('.copy-action-trigger-btn');
+            if (!copyBtn) return;
+            
+            const targetString = copyBtn.getAttribute('data-command');
+            navigator.clipboard.writeText(targetString).then(() => {
+                showToastNotification("Command copied to clipboard!");
+            }).catch(err => {
+                console.error("Clipboard write blocked:", err);
+            });
+        });
+
+        // FIXED: Swapped out nested inline text block blocks for a unified row layout configuration
         function renderCompositeSidebarWidgets(node, rawText) {
             const stackContainer = document.getElementById('widgetWorkspaceStack');
             const lowerPath = node.path.toLowerCase();
@@ -643,12 +648,12 @@
                 compositeHtml += `
                     <div class="bg-slate-900 border border-emerald-800 rounded-lg p-3.5 shadow-md flex flex-col space-y-2 max-w-full overflow-hidden">
                         <span class="text-[9px] font-bold tracking-widest text-emerald-400 uppercase block">Agentforce Skill Registry Hook</span>
-                        <div class="bg-black text-gray-300 font-mono text-xs p-3 rounded border border-gray-800 shadow-inner overflow-x-auto text-left direction-ltr block w-full leading-relaxed font-semibold text-gray-100">
-                            <span class="text-emerald-500 font-bold select-none text-left">$</span> <span class="terminal-code-block">${cmdStr}</span>
+                        <div class="bg-black border border-gray-200/10 p-3 rounded border border-gray-800 shadow-inner overflow-x-auto flex items-center space-x-1.5 font-mono text-xs font-semibold text-slate-200 text-left">
+                            <span class="text-emerald-500 font-bold select-none shrink-0">$</span><code class="whitespace-pre text-left block flex-1 text-slate-100">${cmdStr}</code>
                         </div>
-                        <button onclick="triggerActionCopy(this)" data-command="${cmdStr}" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-gray-400 hover:text-white font-medium text-xs py-1.5 px-3 rounded flex items-center justify-center space-x-1.5 transition-all select-none shadow-sm">
-                            <span class="copy-status-icon">📋</span>
-                            <span class="copy-status-text">Copy</span>
+                        <button data-command="${cmdStr}" class="copy-action-trigger-btn w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-gray-400 hover:text-white font-medium text-xs py-1.5 px-3 rounded flex items-center justify-center space-x-1.5 transition-all select-none shadow-sm">
+                            <span>📋</span>
+                            <span>Copy Command</span>
                         </button>
                         <p class="text-[10px] text-gray-400 leading-relaxed pt-1">Inject this localized target capability node package down into active Salesforce dynamic runtime agents.</p>
                     </div>
@@ -660,12 +665,12 @@
                 compositeHtml += `
                     <div class="bg-slate-900 border border-sky-800 rounded-lg p-3.5 shadow-md flex flex-col space-y-2 max-w-full overflow-hidden">
                         <span class="text-[9px] font-bold tracking-widest text-sky-400 uppercase block">Salesforce DX CLI Deploy Engine</span>
-                        <div class="bg-black text-gray-300 font-mono text-xs p-3 rounded border border-gray-800 shadow-inner overflow-x-auto text-left direction-ltr block w-full leading-relaxed font-semibold text-gray-100">
-                            <span class="text-sky-500 font-bold select-none text-left">$</span> <span class="terminal-code-block">${cmdStr}</span>
+                        <div class="bg-black border border-gray-200/10 p-3 rounded border border-gray-800 shadow-inner overflow-x-auto flex items-center space-x-1.5 font-mono text-xs font-semibold text-slate-200 text-left">
+                            <span class="text-sky-500 font-bold select-none shrink-0">$</span><code class="whitespace-pre text-left block flex-1 text-slate-100">${cmdStr}</code>
                         </div>
-                        <button onclick="triggerActionCopy(this)" data-command="${cmdStr}" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-gray-400 hover:text-white font-medium text-xs py-1.5 px-3 rounded flex items-center justify-center space-x-1.5 transition-all select-none shadow-sm">
-                            <span class="copy-status-icon">📋</span>
-                            <span class="copy-status-text">Copy</span>
+                        <button data-command="${cmdStr}" class="copy-action-trigger-btn w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-gray-400 hover:text-white font-medium text-xs py-1.5 px-3 rounded flex items-center justify-center space-x-1.5 transition-all select-none shadow-sm">
+                            <span>📋</span>
+                            <span>Copy Command</span>
                         </button>
                         <p class="text-[10px] text-gray-400 leading-relaxed pt-1">Push local source changes or metadata elements up into assigned scratch orgs or sandbox containers.</p>
                     </div>
@@ -677,12 +682,12 @@
                 compositeHtml += `
                     <div class="bg-slate-900 border border-gray-800 rounded-lg p-3.5 shadow-md flex flex-col space-y-2 max-w-full overflow-hidden">
                         <span class="text-[9px] font-bold tracking-widest text-indigo-400 uppercase block">Git Repository Clone Target</span>
-                        <div class="bg-black text-gray-300 font-mono text-xs p-3 rounded border border-gray-800 shadow-inner overflow-x-auto text-left direction-ltr block w-full leading-relaxed font-semibold text-gray-100">
-                            <span class="text-indigo-400 font-bold select-none text-left">$</span> <span class="terminal-code-block">${cmdStr}</span>
+                        <div class="bg-black border border-gray-200/10 p-3 rounded border border-gray-800 shadow-inner overflow-x-auto flex items-center space-x-1.5 font-mono text-xs font-semibold text-slate-200 text-left">
+                            <span class="text-indigo-400 font-bold select-none shrink-0">$</span><code class="whitespace-pre text-left block flex-1 text-slate-100">${cmdStr}</code>
                         </div>
-                        <button onclick="triggerActionCopy(this)" data-command="${cmdStr}" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-gray-400 hover:text-white font-medium text-xs py-1.5 px-3 rounded flex items-center justify-center space-x-1.5 transition-all select-none shadow-sm">
-                            <span class="copy-status-icon">📋</span>
-                            <span class="copy-status-text">Copy</span>
+                        <button data-command="${cmdStr}" class="copy-action-trigger-btn w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-gray-400 hover:text-white font-medium text-xs py-1.5 px-3 rounded flex items-center justify-center space-x-1.5 transition-all select-none shadow-sm">
+                            <span>📋</span>
+                            <span>Copy Command</span>
                         </button>
                         <p class="text-[10px] text-gray-400 leading-relaxed pt-1">Clone this entire open-source repository context framework structure down into a local terminal shell.</p>
                     </div>
