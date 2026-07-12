@@ -21,10 +21,10 @@
 </head>
 <body class="bg-[#f3f4f6] text-[#181818] font-sans min-h-screen flex flex-col antialiased relative">
 
-    <header class="bg-[#1b253a] text-white border-b border-[#0f172a] sticky top-0 z-50 shadow-md px-4 py-3">
-        <div class="max-w-[1600px] mx-auto flex flex-col lg:flex-row items-center justify-between gap-4">
+    <header class="bg-[#1b253a] text-white border-b border-[#0f172a] sticky top-0 z-50 shadow-md px-4 py-3 h-[60px] flex items-center shrink-0">
+        <div class="max-w-[1600px] w-full mx-auto flex items-center justify-between gap-4">
             
-            <div class="flex items-center space-x-3 w-full lg:w-auto">
+            <div class="flex items-center space-x-3 shrink-0">
                 <div class="bg-indigo-500 text-white w-8 h-8 rounded flex items-center justify-center font-black text-xs shadow-inner">
                     UNIV
                 </div>
@@ -34,17 +34,17 @@
                 </div>
             </div>
 
-            <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto lg:justify-end">
-                <div class="relative flex items-center bg-slate-800 rounded border border-slate-700 w-64">
-                    <input type="text" id="repoInput" value="" placeholder="Enter owner/repository or GitHub URL" 
+            <div class="flex items-center gap-2 lg:justify-end flex-1 max-w-2xl">
+                <div class="relative flex items-center bg-slate-800 rounded border border-slate-700 flex-1">
+                    <input type="text" id="repoInput" value="" onkeydown="handleRepoFieldKeyDown(event)" placeholder="Enter owner/repository or GitHub URL" 
                            class="w-full px-3 py-1.5 bg-transparent text-white text-xs focus:outline-none font-mono pr-7">
                     <button onclick="toggleFavorite()" id="favBtn" class="absolute right-2 text-gray-400 hover:text-yellow-400 text-xs transition-colors" title="Bookmark Repository">★</button>
                 </div>
                 
-                <div class="relative group">
+                <div class="relative group shrink-0">
                     <input type="password" id="tokenInput" oninput="handleTokenInput()" placeholder="GitHub PAT Token (Optional)" 
                            class="px-3 py-1.5 bg-slate-800 text-white border border-slate-700 rounded text-xs focus:outline-none focus:border-indigo-500 w-52 font-mono pr-6">
-                    <button onclick="clearToken()" id="clearTokenBtn" class="hidden absolute right-2 top-2 text-gray-400 hover:text-rose-400 text-[10px]" title="Clear stored token instantly">✕</button>
+                    <button onclick="openPurgeModal()" id="clearTokenBtn" class="hidden absolute right-2 top-2 text-gray-400 hover:text-rose-400 text-[10px]" title="Clear stored token instantly">✕</button>
                     
                     <div class="absolute right-0 top-full mt-1 bg-slate-900 border border-slate-700 p-2.5 rounded shadow-xl text-[10px] text-gray-300 w-64 hidden group-focus-within:block z-50 space-y-1.5">
                         <p class="font-bold text-sky-400">🔒 Token Security Policy Guidance</p>
@@ -56,7 +56,7 @@
                     </div>
                 </div>
 
-                <button onclick="loadRemoteRepository()" class="bg-indigo-600 hover:bg-indigo-50 text-white font-bold text-xs px-4 py-1.5 rounded transition-all shadow-md">
+                <button onclick="loadRemoteRepository()" class="bg-indigo-600 hover:bg-indigo-50 text-white font-bold text-xs px-4 py-1.5 rounded transition-all shadow-md shrink-0">
                     Ingest Repository
                 </button>
             </div>
@@ -64,7 +64,7 @@
         </div>
     </header>
 
-    <div class="bg-emerald-50 border-b border-emerald-100 px-4 py-1.5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-emerald-800 shadow-inner">
+    <div class="bg-emerald-50 border-b border-emerald-100 px-4 py-1.5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-emerald-800 shadow-inner shrink-0">
         <div class="flex items-center space-x-1.5 font-medium">
             <span>🛡️</span>
             <span><strong>Privacy:</strong> Runs entirely in your browser. Your token and requests go directly to GitHub's API and never through our servers, because we don't have any!</span>
@@ -74,7 +74,7 @@
         </div>
     </div>
 
-    <div class="bg-white border-b border-gray-200 px-4 py-1.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-gray-500 shadow-sm min-h-10">
+    <div class="bg-white border-b border-gray-200 px-4 py-1.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-gray-500 shadow-sm min-h-10 shrink-0">
         <div class="flex flex-wrap items-center gap-2 font-mono">
             <span>Target Repo: <strong id="currentRepoLabel" class="text-gray-700">None</strong></span>
             <span>•</span>
@@ -96,10 +96,10 @@
         </div>
     </div>
 
-    <main class="max-w-[1600px] w-full mx-auto p-4 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+    <main class="max-w-[1600px] w-full mx-auto p-4 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch overflow-hidden">
         
-        <section class="lg:col-span-3 flex flex-col space-y-3">
-            <div class="grid grid-cols-2 gap-2 p-3 bg-[#111827] text-white rounded-lg shadow-md border border-gray-800">
+        <section class="lg:col-span-3 flex flex-col space-y-3 min-h-0">
+            <div class="grid grid-cols-2 gap-2 p-3 bg-[#111827] text-white rounded-lg shadow-md border border-gray-800 shrink-0">
                 <div>
                     <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Indexed Nodes</p>
                     <p class="text-2xl font-black tracking-tight text-emerald-400" id="itemCountBadge">0</p>
@@ -113,7 +113,7 @@
                 </div>
             </div>
 
-            <div class="bg-white p-3.5 rounded-lg border border-gray-200 shadow-sm space-y-2">
+            <div class="bg-white p-3.5 rounded-lg border border-gray-200 shadow-sm space-y-2 shrink-0">
                 <div>
                     <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Bookmarked Repositories</label>
                     <select id="favDropdown" onchange="selectFavRepo(this.value)" class="w-full px-2 py-1 bg-gray-50 border border-gray-300 rounded text-xs focus:outline-none">
@@ -127,17 +127,17 @@
                 </div>
             </div>
 
-            <div class="bg-white rounded-lg border border-gray-200 shadow-sm flex-1 flex flex-col overflow-hidden min-h-[400px]">
-                <div class="px-3 py-2 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+            <div class="bg-white rounded-lg border border-gray-200 shadow-sm flex-1 flex flex-col overflow-hidden min-h-[300px]">
+                <div class="px-3 py-2 bg-gray-50 border-b border-gray-200 flex justify-between items-center shrink-0">
                     <span class="text-[11px] font-bold uppercase tracking-wider text-gray-500">Ecosystem Explorer Tree</span>
                 </div>
-                <div id="treeLoadingContainer" class="overflow-y-auto flex-1 max-h-[58vh] bg-white text-xs">
+                <div id="treeLoadingContainer" class="overflow-y-auto flex-1 bg-white text-xs">
                     <div class="p-8 text-center text-gray-400 italic">Enter a public repository profile track to assemble interactive workspace trees...</div>
                 </div>
             </div>
         </section>
 
-        <section class="lg:col-span-9 flex flex-col min-h-[500px]">
+        <section class="lg:col-span-9 flex flex-col min-h-0">
             <div id="welcomeState" class="bg-white border border-gray-200 rounded-lg p-16 text-center my-auto shadow-sm flex flex-col items-center justify-center flex-1">
                 <div class="w-12 h-12 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-lg flex items-center justify-center font-bold text-lg mb-3 shadow-sm select-none">🎛️</div>
                 <h3 class="text-sm font-bold text-gray-800">Dynamic Configuration Workspace</h3>
@@ -145,7 +145,7 @@
             </div>
 
             <div id="detailState" class="hidden bg-white border border-gray-200 rounded-lg shadow-sm flex-1 flex flex-col overflow-hidden">
-                <div class="px-4 py-3 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div class="px-4 py-3 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
                     <div class="flex items-center space-x-3">
                         <div id="fileIconMarker" class="w-9 h-9 bg-indigo-600 text-white rounded flex items-center justify-center font-mono text-xs font-bold shadow-sm select-none">ACT</div>
                         <div>
@@ -161,13 +161,13 @@
                     </div>
                 </div>
 
-                <div class="p-5 overflow-y-auto flex-1 grid grid-cols-1 xl:grid-cols-12 gap-5 bg-gray-50/50">
-                    <div class="xl:col-span-8 bg-white p-6 rounded-lg border border-gray-200 shadow-sm flex flex-col max-w-full overflow-hidden">
-                        <div class="text-[10px] font-bold tracking-wider text-gray-400 uppercase mb-4 border-b border-gray-100 pb-2">File Content Document View</div>
-                        <div class="overflow-y-auto flex-1 prose max-w-none text-xs" id="markdownContainer"></div>
+                <div class="p-5 overflow-y-auto flex-1 grid grid-cols-1 xl:grid-cols-12 gap-5 bg-gray-50/50 min-h-0">
+                    <div class="xl:col-span-8 bg-white p-6 rounded-lg border border-gray-200 shadow-sm flex flex-col max-w-full overflow-hidden min-h-0">
+                        <div class="text-[10px] font-bold tracking-wider text-gray-400 uppercase mb-4 border-b border-gray-100 pb-2 shrink-0">File Content Document View</div>
+                        <div class="overflow-y-auto flex-1 prose max-w-none text-xs min-h-0" id="markdownContainer"></div>
                     </div>
 
-                    <div class="xl:col-span-4 space-y-4 flex flex-col" id="widgetWorkspaceStack"></div>
+                    <div class="xl:col-span-4 space-y-4 flex flex-col overflow-y-auto min-h-0" id="widgetWorkspaceStack"></div>
                 </div>
             </div>
         </section>
@@ -176,6 +176,35 @@
     <div id="toastNotification" class="fixed bottom-5 right-5 bg-slate-900 text-white text-xs font-medium py-2.5 px-4 rounded-lg shadow-xl border border-slate-700 flex items-center space-x-2 translate-y-20 opacity-0 pointer-events-none transition-all duration-300 z-50">
         <span class="text-emerald-400 font-bold">✓</span>
         <span id="toastMessage">Command copied to clipboard!</span>
+    </div>
+
+    <div id="customModalOverlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div id="authPromptContainer" class="hidden bg-white rounded-xl shadow-2xl border border-gray-200 max-w-md w-full overflow-hidden transform scale-95 transition-all p-5 space-y-4">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                <span>🔑</span> <span>GitHub Authentication Requested</span>
+            </h3>
+            <p id="authPromptReason" class="text-xs text-gray-500 leading-relaxed">GitHub API rate limits exceeded or accessing a private repository profile layer.</p>
+            <div class="space-y-1">
+                <label class="block text-[10px] uppercase font-bold text-gray-400">Personal Access Token (PAT)</label>
+                <input type="password" id="modalTokenInput" placeholder="paste fine-grained read-only token..." 
+                       class="w-full bg-gray-50 border border-gray-300 px-3 py-2 rounded text-xs font-mono focus:outline-none focus:border-indigo-500">
+            </div>
+            <div class="flex justify-end space-x-2 pt-2 text-xs font-bold">
+                <button onclick="closeCustomModal()" class="px-4 py-2 border border-gray-300 rounded text-gray-600 hover:bg-gray-50">Cancel Ingestion</button>
+                <button onclick="submitAuthTokenModal()" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Apply Token</button>
+            </div>
+        </div>
+
+        <div id="purgeConfirmContainer" class="hidden bg-white rounded-xl shadow-2xl border border-gray-200 max-w-sm w-full overflow-hidden transform scale-95 transition-all p-5 space-y-4">
+            <h3 class="text-sm font-bold text-rose-700 flex items-center space-x-2">
+                <span>⚠️</span> <span>Purge Saved Credentials?</span>
+            </h3>
+            <p class="text-xs text-gray-500 leading-relaxed">This action will instantly delete your GitHub token payloads from both active session storage cells and device persistent storage keys.</p>
+            <div class="flex justify-end space-x-2 pt-2 text-xs font-bold">
+                <button onclick="closeCustomModal()" class="px-4 py-2 border border-gray-300 rounded text-gray-600 hover:bg-gray-50">Cancel</button>
+                <button onclick="executeTokenWipePurge()" class="px-4 py-2 bg-rose-600 text-white rounded hover:bg-rose-700">Wipe Everything</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -192,6 +221,7 @@
         };
         
         let activeDefaultBranch = "main";
+        let ongoingAuthPromiseResolve = null;
 
         function parseRepositoryInput(inputString) {
             let cleanStr = inputString.trim();
@@ -248,12 +278,73 @@
             }
         }
 
-        function clearToken() {
+        // FIXED: Replaced standard native confirm blocks with modular browser dialog triggers
+        function openPurgeModal() {
+            document.getElementById('customModalOverlay').classList.remove('hidden');
+            document.getElementById('purgeConfirmContainer').classList.remove('hidden');
+            document.getElementById('authPromptContainer').classList.add('hidden');
+        }
+
+        // FIXED: Scrubbed both the token string variable and associated persistence configuration parameters during purge
+        function executeTokenWipePurge() {
             document.getElementById('tokenInput').value = "";
             document.getElementById('clearTokenBtn').classList.add('hidden');
             sessionStorage.removeItem('universal_git_pat');
             localStorage.removeItem('universal_git_pat');
-            alert("Token state completely purged from all local and session browser context slots.");
+            localStorage.removeItem('universal_git_pat_persistent');
+            document.getElementById('rememberMeCheck').checked = false;
+            
+            closeCustomModal();
+            showToastNotification("All credential tokens and persistence flags have been safely deleted.");
+        }
+
+        // FIXED: Bind input form interactions to submit code directly upon finding the enter key payload
+        function handleRepoFieldKeyDown(e) {
+            if (e.key === 'Enter' || e.keyCode === 13) {
+                e.preventDefault();
+                loadRemoteRepository();
+            }
+        }
+
+        function closeCustomModal() {
+            document.getElementById('customModalOverlay').classList.add('hidden');
+            document.getElementById('purgeConfirmContainer').classList.add('hidden');
+            document.getElementById('authPromptContainer').classList.add('hidden');
+            document.getElementById('modalTokenInput').value = "";
+            if (ongoingAuthPromiseResolve) {
+                ongoingAuthPromiseResolve(null);
+                ongoingAuthPromiseResolve = null;
+            }
+        }
+
+        function requestTokenViaCustomModal(reasonText) {
+            document.getElementById('authPromptReason').innerText = reasonText;
+            document.getElementById('customModalOverlay').classList.remove('hidden');
+            document.getElementById('authPromptContainer').classList.remove('hidden');
+            document.getElementById('purgeConfirmContainer').classList.add('hidden');
+            document.getElementById('modalTokenInput').focus();
+            
+            return new Promise((resolve) => {
+                ongoingAuthPromiseResolve = resolve;
+            });
+        }
+
+        function submitAuthTokenModal() {
+            const tokenVal = document.getElementById('modalTokenInput').value.trim();
+            if (tokenVal) {
+                document.getElementById('tokenInput').value = tokenVal;
+                sessionStorage.setItem('universal_git_pat', tokenVal);
+                document.getElementById('clearTokenBtn').classList.remove('hidden');
+                if (document.getElementById('rememberMeCheck').checked) {
+                    localStorage.setItem('universal_git_pat', tokenVal);
+                }
+                
+                const resolveFn = ongoingAuthPromiseResolve;
+                ongoingAuthPromiseResolve = null;
+                document.getElementById('customModalOverlay').classList.add('hidden');
+                document.getElementById('authPromptContainer').classList.add('hidden');
+                if (resolveFn) resolveFn(tokenVal);
+            }
         }
 
         function updateRecentsDeck(repoName) {
@@ -345,6 +436,24 @@
             });
         }
 
+        // FIXED: Suppressed badge output values cleanly by forcing a clean "Unknown" baseline status whenever asset loads fail
+        function clearEcosystemProfileBadges() {
+            document.getElementById('badgeContainer').innerHTML = `
+                <span class="bg-gray-100 text-gray-700 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider shadow-sm border border-gray-200">Unknown</span>
+            `;
+        }
+
+        // FIXED: Wipes out the file text preview pane contents and dynamic command layouts cleanly on every fresh repo switch request
+        function resetCodePreviewWorkspaceState() {
+            selectedSkillId = null;
+            document.getElementById('welcomeState').classList.remove('hidden');
+            document.getElementById('detailState').classList.add('hidden');
+            document.getElementById('markdownContainer').innerHTML = "";
+            document.getElementById('widgetWorkspaceStack').innerHTML = "";
+            document.getElementById('activeFileName').innerText = "File View";
+            document.getElementById('activeFilePath').innerText = "Path";
+        }
+
         async function fetchGitHubData(endpoint) {
             const token = sessionStorage.getItem('universal_git_pat') || document.getElementById('tokenInput').value.trim();
             const headers = { "Accept": "application/vnd.github.v3+json" };
@@ -360,13 +469,23 @@
                 document.getElementById('apiTracker').innerText = `API Limits: ${rateLimit}/${rateLimitLimit}`;
             }
 
+            // FIXED: Expired credentials gracefully drop out of loops and prompt the user via clean modal overlays
             if (response.status === 403 || response.status === 401) {
-                const patVal = prompt("GitHub API Rate Limit Reached (or accessing private repository scope parameters).\nPlease enter a read-only Personal Access Token (PAT) to continue processing raw paths:");
-                if (patVal) {
-                    document.getElementById('tokenInput').value = patVal;
-                    sessionStorage.setItem('universal_git_pat', patVal);
-                    document.getElementById('clearTokenBtn').classList.remove('hidden');
+                const updatedTokenPayload = await requestTokenViaCustomModal(
+                    response.status === 401 ? "The saved GitHub token is invalid or expired. Clear it or provide a new credential to proceed:" : "GitHub API Rate Limit Reached. Provide a read-only PAT token to restore connection paths:"
+                );
+                
+                if (updatedTokenPayload) {
                     return await fetchGitHubData(endpoint);
+                } else {
+                    // FIXED: Clears invalid persistent token structures instantly to completely prevent application lockouts on page refresh
+                    sessionStorage.removeItem('universal_git_pat');
+                    localStorage.removeItem('universal_git_pat');
+                    localStorage.removeItem('universal_git_pat_persistent');
+                    document.getElementById('tokenInput').value = "";
+                    document.getElementById('clearTokenBtn').classList.add('hidden');
+                    document.getElementById('rememberMeCheck').checked = false;
+                    throw new Error("Authentication flow abandoned by user.");
                 }
             }
 
@@ -384,6 +503,8 @@
                 return;
             }
 
+            // FIXED: Wipes state vectors before beginning remote lookups to ensure clean handoffs
+            resetCodePreviewWorkspaceState();
             currentOwnerRepo = repoValue;
             document.getElementById('repoInput').value = repoValue;
             document.getElementById('currentRepoLabel').innerText = repoValue;
@@ -421,6 +542,8 @@
                 filterSkills();
             } catch (err) {
                 console.error(err);
+                // FIXED: Clear ecosystem badge tracks to keep structural UI states matching error states perfectly
+                clearEcosystemProfileBadges();
                 treeContainer.innerHTML = `<div class="p-6 text-center text-rose-600 font-medium">Ingestion failure. Check credentials, token clearances, or path values.</div>`;
             }
         }
@@ -438,6 +561,7 @@
             activeSignatures.SALESFORCE_DX = paths.includes('sfdx-project.json');
             activeSignatures.NODE_JS = paths.includes('package.json');
             
+            // FIXED: Swapped signature detection logic vectors to ensure Node badges hide cleanly whenever Agentforce OR Salesforce DX signatures return true
             activeSignatures.GENERIC = !(activeSignatures.AGENTFORCE_SKILLS || activeSignatures.SALESFORCE_DX || activeSignatures.NODE_JS);
 
             let badgesHtml = "";
@@ -447,7 +571,7 @@
             if (activeSignatures.SALESFORCE_DX) {
                 badgesHtml += `<span class="bg-sky-100 text-sky-800 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider shadow-sm border border-sky-200">Salesforce DX</span>`;
             }
-            if (activeSignatures.NODE_JS && !activeSignatures.AGENTFORCE_SKILLS) {
+            if (activeSignatures.NODE_JS && !activeSignatures.AGENTFORCE_SKILLS && !activeSignatures.SALESFORCE_DX) {
                 badgesHtml += `<span class="bg-green-100 text-green-800 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider shadow-sm border border-green-200">Node.js Module</span>`;
             }
             if (activeSignatures.GENERIC) {
@@ -597,23 +721,20 @@
             }
         }
 
-        // Self-Disappearing Toast Engine Notification Pipeline
         function showToastNotification(messageText) {
             const toast = document.getElementById('toastNotification');
             document.getElementById('toastMessage').innerText = messageText;
             
-            // Slide up and fade in view bounds
             toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
             toast.classList.add('translate-y-0', 'opacity-100');
             
             setTimeout(() => {
-                // Slide back down out of view bounds safely
                 toast.classList.remove('translate-y-0', 'opacity-100');
                 toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
             }, 2500);
         }
 
-        // Centralized Event Delegation framework handles text copies cleanly outside the HTML string injection template
+        // Vanilla Event Delegation manages button triggers cleanly outside DOMPurify sanitization targets
         document.getElementById('widgetWorkspaceStack').addEventListener('click', function(e) {
             const copyBtn = e.target.closest('.copy-action-trigger-btn');
             if (!copyBtn) return;
@@ -626,14 +747,13 @@
             });
         });
 
-        // FIXED: Swapped out nested inline text block blocks for a unified row layout configuration
         function renderCompositeSidebarWidgets(node, rawText) {
             const stackContainer = document.getElementById('widgetWorkspaceStack');
             const lowerPath = node.path.toLowerCase();
             let compositeHtml = "";
 
             compositeHtml += `
-                <div class="bg-white border border-gray-200 rounded-lg p-3.5 shadow-sm">
+                <div class="bg-white border border-gray-200 rounded-lg p-3.5 shadow-sm shrink-0">
                     <span class="text-[9px] font-bold tracking-widest text-gray-400 uppercase mb-2 block">Interface Metrics Matrix</span>
                     <div class="space-y-2 text-[11px]">
                         <div><span class="text-gray-400 block">Relative Node:</span><strong class="text-gray-700 font-mono text-[10px] break-all">${node.path}</strong></div>
@@ -646,7 +766,7 @@
                 const skillId = node.path.split('/')[1] || "target-skill";
                 const cmdStr = `npx skills add ${currentOwnerRepo}/skills/${skillId}`;
                 compositeHtml += `
-                    <div class="bg-slate-900 border border-emerald-800 rounded-lg p-3.5 shadow-md flex flex-col space-y-2 max-w-full overflow-hidden">
+                    <div class="bg-slate-900 border border-emerald-800 rounded-lg p-3.5 shadow-md flex flex-col space-y-2 max-w-full overflow-hidden shrink-0">
                         <span class="text-[9px] font-bold tracking-widest text-emerald-400 uppercase block">Agentforce Skill Registry Hook</span>
                         <div class="bg-black border border-gray-200/10 p-3 rounded border border-gray-800 shadow-inner overflow-x-auto flex items-center space-x-1.5 font-mono text-xs font-semibold text-slate-200 text-left">
                             <span class="text-emerald-500 font-bold select-none shrink-0">$</span><code class="whitespace-pre text-left block flex-1 text-slate-100">${cmdStr}</code>
@@ -663,7 +783,7 @@
             if (activeSignatures.SALESFORCE_DX) {
                 const cmdStr = `sf project deploy start --manifest manifest/package.xml`;
                 compositeHtml += `
-                    <div class="bg-slate-900 border border-sky-800 rounded-lg p-3.5 shadow-md flex flex-col space-y-2 max-w-full overflow-hidden">
+                    <div class="bg-slate-900 border border-sky-800 rounded-lg p-3.5 shadow-md flex flex-col space-y-2 max-w-full overflow-hidden shrink-0">
                         <span class="text-[9px] font-bold tracking-widest text-sky-400 uppercase block">Salesforce DX CLI Deploy Engine</span>
                         <div class="bg-black border border-gray-200/10 p-3 rounded border border-gray-800 shadow-inner overflow-x-auto flex items-center space-x-1.5 font-mono text-xs font-semibold text-slate-200 text-left">
                             <span class="text-sky-500 font-bold select-none shrink-0">$</span><code class="whitespace-pre text-left block flex-1 text-slate-100">${cmdStr}</code>
@@ -680,7 +800,7 @@
             if (activeSignatures.GENERIC || (!activeSignatures.AGENTFORCE_SKILLS && !activeSignatures.SALESFORCE_DX)) {
                 const cmdStr = `git clone https://github.com/${currentOwnerRepo}.git`;
                 compositeHtml += `
-                    <div class="bg-slate-900 border border-gray-800 rounded-lg p-3.5 shadow-md flex flex-col space-y-2 max-w-full overflow-hidden">
+                    <div class="bg-slate-900 border border-gray-800 rounded-lg p-3.5 shadow-md flex flex-col space-y-2 max-w-full overflow-hidden shrink-0">
                         <span class="text-[9px] font-bold tracking-widest text-indigo-400 uppercase block">Git Repository Clone Target</span>
                         <div class="bg-black border border-gray-200/10 p-3 rounded border border-gray-800 shadow-inner overflow-x-auto flex items-center space-x-1.5 font-mono text-xs font-semibold text-slate-200 text-left">
                             <span class="text-indigo-400 font-bold select-none shrink-0">$</span><code class="whitespace-pre text-left block flex-1 text-slate-100">${cmdStr}</code>
