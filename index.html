@@ -45,6 +45,13 @@
             color: #64748b;
             user-select: none;
             font-family: monospace;
+            cursor: pointer;
+            transition: color 0.15s, background-color 0.15s;
+            border-radius: 2px;
+        }
+        .line-numbered-code .code-line::before:hover {
+            color: #f8fafc;
+            background-color: rgba(255, 255, 255, 0.1);
         }
         .line-highlight { background-color: rgba(254, 240, 138, 0.25) !important; border-left: 2px solid #facc15; }
         .search-match-highlight { background-color: #fef08a; color: #000; border-radius: 2px; }
@@ -217,11 +224,19 @@
                         </div>
                     </div>
                     
-                    <div class="flex items-center gap-2">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <!-- Line Range Deep-Link UI Widget -->
+                        <div class="flex items-center gap-1 bg-white border border-gray-300 rounded px-2 py-1 shadow-sm">
+                            <span class="text-[10px] font-bold text-gray-500 uppercase font-mono" title="Click line numbers directly (hold Shift for range, Cmd/Ctrl for multi-select)">Lines:</span>
+                            <input type="text" id="customLineRangeInput" oninput="handleCustomRangeInput(this.value)" placeholder="e.g. 5-10,15" title="Click line numbers or enter line ranges (e.g. 5-10,15)"
+                                   class="px-1.5 py-0.5 bg-gray-50 border border-gray-200 rounded text-xs font-mono w-28 focus:outline-none focus:border-indigo-500">
+                            <button onclick="copyCustomLineLink()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-0.5 rounded text-[10px] font-bold transition-all shadow-sm">Copy Link</button>
+                        </div>
+
                         <!-- In-File Search Input -->
                         <div class="relative">
-                            <input type="text" id="previewSearchInput" oninput="searchActivePreviewText(this.value)" placeholder="In-file search (Cmd+F)..." 
-                                   class="px-2.5 py-1 bg-white border border-gray-300 rounded text-xs focus:outline-none focus:border-indigo-500 font-mono w-48">
+                            <input type="text" id="previewSearchInput" oninput="searchActivePreviewText(this.value)" placeholder="In-file search..." 
+                                   class="px-2.5 py-1 bg-white border border-gray-300 rounded text-xs focus:outline-none focus:border-indigo-500 font-mono w-32">
                         </div>
                         
                         <!-- Copy Raw File Content Button -->
@@ -287,6 +302,10 @@
         let expandedFolders = {};
         
         const inSessionContentIndex = new Map();
+
+        // 🌟 Interactive Line Selection State
+        let activeSelectedLines = new Set();
+        let lastClickedLineNum = null;
         
         let activeSignatures = {
             AGENTFORCE_SKILLS: false,
@@ -550,6 +569,21 @@
             });
         }
 
+        function copyCustomLineLink() {
+            if(!currentOwnerRepo || !selectedSkillId) {
+                alert("Please select a file first before generating a line deep-link.");
+                return;
+            }
+            const rangeVal = document.getElementById('customLineRangeInput').value.trim();
+            let shareUrl = `${window.location.origin}${window.location.pathname}?repo=${currentOwnerRepo}&path=${selectedSkillId}`;
+            if (rangeVal) {
+                shareUrl += `#L${rangeVal.replace(/^L/i, '')}`;
+            }
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                showToastNotification("Line range deep-link copied to clipboard!");
+            });
+        }
+
         function clearEcosystemProfileBadges() {
             document.getElementById('badgeContainer').innerHTML = `
                 <span class="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded font-medium border border-gray-200">Generic repo</span>
@@ -562,6 +596,8 @@
         function resetCodePreviewWorkspaceState() {
             selectedSkillId = null;
             activeRawFileText = "";
+            activeSelectedLines.clear();
+            lastClickedLineNum = null;
             document.getElementById('welcomeState').classList.remove('hidden');
             document.getElementById('detailState').classList.add('hidden');
             document.getElementById('markdownContainer').innerHTML = "";
@@ -569,6 +605,7 @@
             document.getElementById('activeFileName').innerText = "File View";
             document.getElementById('activeFilePath').innerText = "Path";
             document.getElementById('previewSearchInput').value = "";
+            document.getElementById('customLineRangeInput').value = "";
         }
 
         function initPrivacyBannerTracking() {
@@ -938,22 +975,71 @@
                 .replace(keywords, '<span class="text-purple-400 font-bold">$1</span>');
         }
 
-        // 🌟 PERMANENT FIX 2.3: Synchronous Line-Range Fragment Highlighting
+        // 🌟 Helper: Parse Line Fragment Hash (e.g. #L5,10-15) into Set
+        function parseLineHash(hash) {
+            const linesToHighlight = new Set();
+            if (!hash || !hash.startsWith('#L')) return linesToHighlight;
+
+            const rawSegments = hash.replace('#L', '').split(',');
+            rawSegments.forEach(segment => {
+                const cleanSegment = segment.replace(/^L/i, '').trim();
+                if (cleanSegment.includes('-')) {
+                    const [start, end] = cleanSegment.split('-').map(num => parseInt(num, 10));
+                    if (!isNaN(start) && !isNaN(end)) {
+                        for (let i = Math.min(start, end); i <= Math.max(start, end); i++) {
+                            linesToHighlight.add(i);
+                        }
+                    }
+                } else {
+                    const singleLine = parseInt(cleanSegment, 10);
+                    if (!isNaN(singleLine)) {
+                        linesToHighlight.add(singleLine);
+                    }
+                }
+            });
+            return linesToHighlight;
+        }
+
+        // 🌟 Range Compression Engine (e.g. Set(5, 12, 13, 14) -> "5,12-14")
+        function formatLineSetToRangeString(set) {
+            if (!set || set.size === 0) return '';
+            const sorted = Array.from(set).sort((a, b) => a - b);
+            const ranges = [];
+            let start = sorted[0];
+            let prev = sorted[0];
+
+            for (let i = 1; i < sorted.length; i++) {
+                if (sorted[i] === prev + 1) {
+                    prev = sorted[i];
+                } else {
+                    ranges.push(start === prev ? `${start}` : `${start}-${prev}`);
+                    start = sorted[i];
+                    prev = sorted[i];
+                }
+            }
+            ranges.push(start === prev ? `${start}` : `${start}-${prev}`);
+            return ranges.join(',');
+        }
+
         function renderLineNumberedCode(rawText, ext) {
             const lines = rawText.split('\n');
-            
-            const hash = window.location.hash;
-            let startLine = -1, endLine = -1;
-            if (hash && hash.startsWith('#L')) {
-                const parts = hash.replace('#L', '').split('-');
-                startLine = parseInt(parts[0], 10);
-                endLine = parts[1] ? parseInt(parts[1], 10) : startLine;
+            activeSelectedLines = parseLineHash(window.location.hash);
+
+            if (activeSelectedLines.size > 0) {
+                const sorted = Array.from(activeSelectedLines).sort((a, b) => a - b);
+                lastClickedLineNum = sorted[0];
+                const inputEl = document.getElementById('customLineRangeInput');
+                if (inputEl) inputEl.value = formatLineSetToRangeString(activeSelectedLines);
+            } else {
+                lastClickedLineNum = null;
+                const inputEl = document.getElementById('customLineRangeInput');
+                if (inputEl) inputEl.value = "";
             }
 
             const linesHtml = lines.map((lineStr, idx) => {
                 const lineNum = idx + 1;
                 const tokenizedLine = tokenizeSyntax(lineStr, ext);
-                const isHighlighted = (lineNum >= startLine && lineNum <= endLine);
+                const isHighlighted = activeSelectedLines.has(lineNum);
                 const highlightClass = isHighlighted ? ' line-highlight' : '';
                 
                 return `<span id="L${lineNum}" class="code-line${highlightClass}">${tokenizedLine || ' '}</span>`;
@@ -963,18 +1049,89 @@
         }
 
         function scrollToLineFragment() {
-            const hash = window.location.hash;
-            if (!hash || !hash.startsWith('#L')) return;
-
-            const parts = hash.replace('#L', '').split('-');
-            const startLine = parseInt(parts[0], 10);
+            if (activeSelectedLines.size === 0) return;
+            const firstLine = Math.min(...Array.from(activeSelectedLines));
             
             setTimeout(() => {
-                const firstEl = document.getElementById(`L${startLine}`);
+                const firstEl = document.getElementById(`L${firstLine}`);
                 if (firstEl) {
                     firstEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
-            }, 50);
+            }, 60);
+        }
+
+        // 🌟 Apply Line Highlights and URL Hash Sync Dynamically
+        function applyLineSelectionState() {
+            const rangeStr = formatLineSetToRangeString(activeSelectedLines);
+            document.getElementById('customLineRangeInput').value = rangeStr;
+
+            const newHash = rangeStr ? `#L${rangeStr}` : '';
+            if (window.history.replaceState) {
+                window.history.replaceState(null, null, window.location.pathname + window.location.search + newHash);
+            } else {
+                window.location.hash = newHash;
+            }
+
+            const container = document.getElementById('markdownContainer');
+            const allLines = container.querySelectorAll('.code-line');
+            allLines.forEach(lineEl => {
+                const num = parseInt(lineEl.id.replace('L', ''), 10);
+                if (activeSelectedLines.has(num)) {
+                    lineEl.classList.add('line-highlight');
+                } else {
+                    lineEl.classList.remove('line-highlight');
+                }
+            });
+        }
+
+        // 🌟 Interactive Click Handler for Line Number Selection
+        function initInteractiveLineClickListener() {
+            const container = document.getElementById('markdownContainer');
+            container.addEventListener('click', function(e) {
+                const codeLine = e.target.closest('.code-line');
+                if (!codeLine) return;
+
+                const rect = codeLine.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                
+                // Trigger line selection strictly when clicking within the line-number gutter area (left 52px)
+                if (clickX > 52) return;
+
+                const lineNum = parseInt(codeLine.id.replace('L', ''), 10);
+                if (isNaN(lineNum)) return;
+
+                e.preventDefault();
+
+                if (e.shiftKey && lastClickedLineNum !== null) {
+                    const start = Math.min(lastClickedLineNum, lineNum);
+                    const end = Math.max(lastClickedLineNum, lineNum);
+                    if (!e.ctrlKey && !e.metaKey) {
+                        activeSelectedLines.clear();
+                    }
+                    for (let i = start; i <= end; i++) {
+                        activeSelectedLines.add(i);
+                    }
+                } else if (e.ctrlKey || e.metaKey) {
+                    if (activeSelectedLines.has(lineNum)) {
+                        activeSelectedLines.delete(lineNum);
+                    } else {
+                        activeSelectedLines.add(lineNum);
+                    }
+                    lastClickedLineNum = lineNum;
+                } else {
+                    activeSelectedLines.clear();
+                    activeSelectedLines.add(lineNum);
+                    lastClickedLineNum = lineNum;
+                }
+
+                applyLineSelectionState();
+            });
+        }
+
+        function handleCustomRangeInput(val) {
+            const cleanVal = val.trim().replace(/^L/i, '');
+            activeSelectedLines = parseLineHash(cleanVal ? `#L${cleanVal}` : '');
+            applyLineSelectionState();
         }
 
         function searchActivePreviewText(query) {
@@ -1287,6 +1444,7 @@
             initPrivacyBannerTracking();
             renderRecentsDeck();
             renderFavoritesDropdown();
+            initInteractiveLineClickListener();
             
             const deepLinkObj = checkUrlDeepLinks();
             if (deepLinkObj && deepLinkObj.repo) {
