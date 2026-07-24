@@ -1,78 +1,33 @@
 # Changelog
 
-All notable changes to Universal Git Visualiser & Setup Studio are documented here, grouped by build phase rather than by individual commit. Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
+All notable changes to this project will be documented in this file.
 
-Each phase entry should only be filled in **after** the phase has been built and verified working — not written in advance of the work landing. When a phase entry is added, check whether the README, `demo.gif`, and `intro-video-script.md` still accurately describe the app; if not, note that as a follow-up in the entry.
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
----
-
-## [Unreleased]
-
-Nothing pending yet.
-
----
-
-## [Baseline] - 2026-07-15
-
-Starting point this changelog picks up from. Covers everything shipped before phased v2 work began.
+## [v2.0.0-staging] - 2026-07-24
 
 ### Added
-- Core ingestion flow: paste `owner/repo` or full GitHub URL, fetch full file tree client-side, no backend.
-- Ecosystem detection for Agentforce Skills and Salesforce DX, with matching `npx skills add` / `sf project deploy` command cards.
-- File preview pane with Markdown rendering (DOMPurify-sanitized) and raw code view.
-- Client-side-only token handling (sessionStorage by default, opt-in localStorage persistence), with one-click purge.
-- Copy Deep-Link feature (`?repo=owner/repo`).
-- Two-row ribbon redesign, sentence-case badges, simplified command-card copy (21-item UI/UX cleanup pass).
+- **Phase 1 (Quick Wins):**
+  - Directory Tree bulk expand/collapse all toggle controls.
+  - Zero-dependency file extension glyph lookup table.
+  - Preview header "Copy Raw" content button with toast notification feedback.
+  - At-a-Glance Repository Health strip displaying commit date, workflow detection, license, and open issue counts.
+  - Client-side computed architecture distribution progress bar.
+- **Phase 2 (Self-Contained UX):**
+  - Zero-CDN client-side syntax tokenizing engine for JS, TS, JSON, Python, Apex, XML, and YAML files.
+  - In-file match search (`Cmd+F`) with match highlighting inside the preview pane.
+  - Deep-link support for line fragments (`#L12-L25`) with smooth auto-scroll and line highlighting.
+- **Phase 3 (Ecosystem & Validation Expansion):**
+  - Dynamic Node.js package script parser listing all defined `package.json` scripts.
+  - Python ecosystem disambiguation surfacing virtual environment setup (`python -m venv`) for `requirements.txt` and `poetry install` for `pyproject.toml`.
+  - Docker and Docker Compose environment setup command card generation.
+  - Client-side manifest validation warnings for SFDX and Agentforce skill manifests.
+- **Phase 4 (Security & In-Session Search):**
+  - Pre-execution supply-chain security linter flagging lifecycle scripts, pipe-to-shell patterns, unpinned dependency versions, and non-standard registry URLs.
+  - Scoped in-session content search across opened files with instant match navigation.
 
 ### Fixed
-- Critical: bad/remembered GitHub token causing indefinite freeze on reload (was TC-SEC-05) — replaced blocking native `prompt()` with in-page auth modal.
-- Stale file-preview panel not resetting between repo switches.
-- Enter-key not submitting the repo field.
-- Node.js/Salesforce DX badge conflict (extra badge shown when it shouldn't be).
-- Token purge leaving a leftover persistence flag in localStorage.
-
-### Known open issues (not yet scheduled)
-- Invalid-format validation (`TC-ING-04`) still uses a native `alert()` instead of the in-page modal pattern used elsewhere.
-- Tailwind CSS still loaded from CDN — production console warning on every load.
-- API-limit low-hint copy doesn't match spec wording exactly.
-
----
-
-## [Phase 1] - TBD
-*Quick wins: collapse/expand all, file-type icons, copy-raw-file button, repo health panel, language breakdown bar.*
-
-### Added
--
-
----
-
-## [Phase 2] - TBD
-*Self-contained UX upgrades: syntax highlighting + line numbers, in-file search, deep-link to line ranges.*
-
-### Added
--
-
----
-
-## [Phase 3] - TBD
-*Ecosystem & validation expansion: Node/NPM, Python, Docker detection; manifest validation warnings.*
-
-### Added
--
-
-### Follow-up needed
-- README "How it works" section and `demo.gif` only cover Agentforce/Salesforce DX detection — update once this phase ships.
-
----
-
-## [Phase 4] - TBD
-*Higher-effort subsystems: pre-execution security lint, scoped in-session content search.*
-
-### Added
--
-
----
-
-## Deferred (not scheduled)
-- Multi-tab preview canvas — deferred pending a separate UI-redesign decision.
-- Full unscoped global repo content search — deferred pending a decision on making a token a hard requirement for this specific feature.
+- Fixed race condition in `processLineFragmentSelection` where line highlights were cleared on re-render.
+- Fixed single-script truncation in `package.json` output to surface all available project scripts.
+- Fixed in-session search to auto-open and navigate to matching file previews on search execution.
