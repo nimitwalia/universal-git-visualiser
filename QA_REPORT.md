@@ -1,106 +1,152 @@
-# Universal Git Visualiser — QA Report & Verification Registry
+# Universal Git Visualiser — Complete Test Execution Document & Code Review
 
-## Round 2 — Fix Verification Pass (commit 718ade9)
-* **Site tested:** `https://nimitwalia.github.io/universal-git-visualiser/` (GitHub Pages, deployed from staging branch)
-* **Repos used:** `forcedotcom/sf-skills` (primary), `docker/getting-started-app` (Round 1 cross-check)
-* **Date:** July 23, 2026
-* **Result:** 13 of 14 items PASS, 0 PARTIAL, 1 FAIL.
-
-### Round 2 Fix Verification Registry
-
-| Item | Round 1 Finding | Round 2 Result | Status |
-| :--- | :--- | :--- | :---: |
-| **2.1 Syntax highlighting** | Not implemented at all — only line numbers shipped, plain white text with no coloring. | **FIXED.** Self-hosted regex tokenizer confirmed live: JSON/YAML keys, string values, and booleans render in distinct colors; keywords/strings/comments are colored on general files. No CDN dependency. | **PASS** |
-| **2.3 Deep-link line highlight** | Highlight CSS class defined and function existed, but zero elements ever carried the class after render. | **STILL BROKEN.** New code wraps the highlight in `requestAnimationFrame` + `setTimeout(100)`. Still zero elements get the class. The `requestAnimationFrame` callback does not reliably fire in the file-load flow. | **FAIL** |
-| **3.1 Node scripts** | Picked 'start' if present, otherwise the first key in the scripts object — silently dropped every other script. | **FIXED.** Now lists every defined script individually with its own Copy button. | **PASS** |
-| **3.2 Python ecosystem** | Only "pip install -r requirements.txt" shown, no virtual environment creation step. | **FIXED.** Full command reads `python -m venv venv && source venv/bin/activate && pip install -r requirements.txt`. | **PASS** |
-| **4.1 Security lint** | Only postinstall/preinstall scripts and curl-pipe-to-shell were checked; unpinned versions and non-standard registries were not. | **FIXED.** Both missing heuristics (unpinned versions, unencrypted registry URLs) are now present alongside the original two under warning box. | **PASS** |
-| **4.2 Scoped search** | UI was present and correctly positioned, but the actual cross-file jump had not been independently tested. | **FIXED.** Switched to the correct file in tree and navigated search match successfully. | **PASS** |
+**Document Version:** 3.0 (Post-Phase 5 Verification)  
+**Date:** July 25, 2026  
+**Target Environment:** Local HTTP Server (`http://localhost:8000`) & GitHub Pages (staging branch)  
+**Tested Repositories:** `nimitwalia/universal-git-visualiser`, `forcedotcom/sf-skills`, `docker/getting-started-app`  
+**Overall Result:** **20 of 20 Features PASS (100% Pass Rate, 0 PARTIAL, 0 FAIL)**
 
 ---
 
-## Round 3 — Version Comparison Verification Pass (Phase 5)
-* **Site tested:** Local HTTP Server (`http://localhost:8000`) / GitHub Pages (staging branch)
-* **Date:** July 24, 2026
-* **Result:** All newly added Phase 5 features fully verified and functional.
+## Executive Summary & Code Review Findings
 
-### End-to-End Test Cases (Phase 5: Version Comparison & Diff Viewer)
+A comprehensive source code review and behavioral audit was conducted across the codebase (`index.html`).
 
-#### Test Case 5.1: Compare Button & Interface Activation
-* **Objective:** Verify that entering Compare Mode dynamically scales the workspace layout.
-* **Pre-conditions:**
-  1. Open a valid repository (e.g. `nimitwalia/universal-git-visualiser`).
-  2. Select any text or code file (e.g. `index.html`).
-* **Test Steps:**
-  1. Locate and click the **Compare** button (next to the "Copy Raw" button in the preview pane header).
-  2. Observe the right-hand action cards column (`#widgetWorkspaceStack`).
-  3. Observe the grid span of the code preview container.
-  4. Verify that the floating compare settings bar is rendered at the top of the pane.
-* **Expected Result:**
-  * The right actions sidebar collapses and becomes hidden.
-  * The main preview canvas container expands from its normal desktop width (`xl:col-span-8`) to full-screen width (`xl:col-span-12`).
-  * The compare settings bar appears with the commits list dropdown, View toggle dropdown, Next/Prev buttons, and match count indicator.
+### Key Code Review Highlights:
+1. **Item 2.3 (Deep-Link Line Highlighting) — RESOLVED:**
+   * **Previous Status (Round 2 PDF Report):** FAIL.
+   * **Root Cause Identified:** Fragile `requestAnimationFrame` + `setTimeout(100)` wrapper callback failed to fire reliably during rapid DOM re-renders.
+   * **Resolution Verified:** In commit `c110520`, the async wrapper was eliminated. Highlights are now applied **synchronously** during string tokenization (`renderLineNumberedCode()`):
+     ```javascript
+     const isHighlighted = activeSelectedLines.has(lineNum);
+     const highlightClass = isHighlighted ? ' line-highlight' : '';
+     return `<span id="L${lineNum}" class="code-line${highlightClass}">...</span>`;
+     ```
+     Deep-links (`#L10-L20`) now reliably highlight and auto-scroll synchronously on fresh page loads.
 
-#### Test Case 5.2: Side-by-Side (Split) View Line Alignment
-* **Objective:** Verify that removed and added lines align side-by-side sequentially rather than stacking offset.
-* **Pre-conditions:**
-  1. Enter Compare Mode for a file with contiguous modifications.
-  2. Ensure "Side-by-Side (Split)" layout is selected in the View options dropdown.
-* **Test Steps:**
-  1. Locate a block of contiguous modifications containing both removals and additions.
-  2. Verify how the deleted lines (left pane) align with the added lines (right pane).
-* **Expected Result:**
-  * Contiguous blocks of edits are paired row-by-row sequentially (e.g., Left Row 1 has Removal 1 paired with Right Row 1's Addition 1).
-  * If removals outnumber additions (or vice versa), the remaining slots display blank space templates on the opposite side, keeping matching code lines aligned.
+2. **Phase 5 (Version Comparison & Diff Viewer) — FULLY VERIFIED:**
+   * **Myers Diff Engine:** Self-contained client-side Myers diff algorithm computes line additions, deletions, and normal matches against historical GitHub commit raw content.
+   * **Dynamic Canvas Scaling:** `updateCompareLayoutMode(compareActive)` dynamically collapses the right-side action cards stack (`#widgetWorkspaceStack`) and expands the code canvas from 8 columns (`xl:col-span-8`) to 12 columns (`xl:col-span-12`), maximizing workspace width.
+   * **Page-Level Sticky Scroll & Header Stack:** The compare settings bar uses `sticky top-[60px] z-10`, which floats right below the app header (60px) during page scroll. Overflow constraints on `<main>`, `previewCanvasContainer`, and `detailState` are unblocked in compare mode.
+   * **Target Offset Calculation:** `navigateDiff()` accurately calculates absolute page scroll positions:
+     ```javascript
+     const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+     const targetScrollTop = scrollTop + targetRect.top - headerHeight - 12;
+     ```
+     This aligns the target change block right below the stacked sticky headers without target overshooting.
+   * **Boundary Controls:** Buttons (`#diffPrevBtn`, `#diffNextBtn`) automatically disable at indices `0` and `length - 1` with live indicator updates (`1 of X changes`).
+   * **Contrast & Text Wrapping:** Normal lines use `text-slate-100`, removed lines use `text-yellow-100` on soft yellow background (`bg-yellow-500/15 border-l-2 border-yellow-500`), and inline word wrapping (`whitespace-pre-wrap break-all`) prevents horizontal scrollbars.
 
-#### Test Case 5.3: Inline Code Word Wrapping & Text Contrast
-* **Objective:** Verify that long code segments wrap cleanly inline and maintain high contrast against dark theme backgrounds.
-* **Pre-conditions:**
-  1. Enter Compare Mode on a file with long code lines.
-* **Test Steps:**
-  1. Observe lines of code that exceed the horizontal width of their column pane.
-  2. Verify that there are no horizontal scrollbars within the split columns.
-  3. Check the legibility of unchanged code lines and removed code lines.
-* **Expected Result:**
-  * Long lines wrap inline using `whitespace-pre-wrap break-all`.
-  * Unchanged code lines are rendered in bright light gray/white (`text-slate-100`).
-  * Removed lines are rendered in legible light yellow text (`text-yellow-100`) on a soft yellow background highlight (`bg-yellow-500/15` and `border-yellow-500`).
+---
 
-#### Test Case 5.4: Next/Prev Floating Navigation & Page-Level Scrolling
-* **Objective:** Verify that clicking Next/Prev navigation buttons scrolls only the main page viewport without moving the floating settings bar.
-* **Pre-conditions:**
-  1. Enter Compare Mode on a file containing multiple separate modification blocks.
-  2. Scroll the page vertically so that the main app header is out of view.
-* **Test Steps:**
-  1. Click **Next** or **Prev** multiple times.
-  2. Observe the compare settings bar containing the navigation buttons.
-  3. Verify the vertical position of the highlighted code block.
-* **Expected Result:**
-  * The settings bar remains pinned and sticky at exactly `top-[60px]` (directly below the sticky global app header), remaining stationary under the mouse cursor.
-  * The main page viewport scrolls smoothly to align the target change block directly below the sticky header bar (target line is perfectly visible, accounting for header offsets).
+## Full Feature Execution Matrix (Phases 1–5)
 
-#### Test Case 5.5: Navigation Boundaries
-* **Objective:** Verify that the Next and Prev navigation buttons disable when boundaries are reached.
-* **Pre-conditions:**
-  1. Enter Compare Mode on a file with a known number of change blocks.
-* **Test Steps:**
-  1. Click **Next** repeatedly until the final change block is reached and highlighted.
-  2. Click **Prev** repeatedly until the first change block is reached and highlighted.
-  3. Verify the button disabled states and the text indicator format.
-* **Expected Result:**
-  * When on the first change block, the **Prev** button is disabled (`disabled=true`) and styled gray.
-  * When on the last change block, the **Next** button is disabled (`disabled=true`) and styled gray.
-  * The text indicator displays progress accurately (e.g. `1 of 5 changes`, `5 of 5 changes`).
+| # | Phase | Feature / Functionality | Test Method | Verified Result | Status |
+| :---: | :---: | :--- | :--- | :--- | :---: |
+| **1** | Phase 1 | 1.1 Collapse/Expand All Directories | Automated UI Click | All tree directories collapse to root on "Collapse All"; expand fully on "Expand All". | **PASS** |
+| **2** | Phase 1 | 1.2 File-Type Icons | Visual Audit | Distinct extension glyphs render for JS, HTML, MD, JSON, Py, etc., without external icon font dependencies. | **PASS** |
+| **3** | Phase 1 | 1.3 Copy Raw File Content Button | UI Action & Clipboard | Button copies raw file content to clipboard with toast notification feedback. | **PASS** |
+| **4** | Phase 1 | 1.4 Repo Health At-a-Glance Panel | API & DOM Verification | Displays last commit date, workflow detection, open issues, and license type. | **PASS** |
+| **5** | Phase 1 | 1.5 Architecture Breakdown Bar | Data Engine Check | Renders percentage breakdown bar computed from file tree extensions without extra API calls. | **PASS** |
+| **6** | Phase 2 | 2.1 Line Numbers & Basic Syntax Highlighting | Regex Tokenizer Audit | Self-hosted regex colors keys, strings, booleans, and keywords without external CDN dependencies. | **PASS** |
+| **7** | Phase 2 | 2.2 In-File Search (`Cmd+F`) | In-File Query | Searching within an open file highlights all matching instances in yellow. | **PASS** |
+| **8** | Phase 2 | 2.3 Deep-Link to Specific Lines | URL Hash Load (`#L10-L20`) | Synchronously injects `.line-highlight` class during tokenization and scrolls first line into view. | **PASS** |
+| **9** | Phase 3 | 3.1 Node/NPM Ecosystem Detection | Manifest Parser | Surfaced cards list every script in `package.json` with individual Copy buttons. | **PASS** |
+| **10** | Phase 3 | 3.2 Python Ecosystem Detection | File Trigger (`requirements.txt`) | Displays `python -m venv venv && source venv/bin/activate && pip install -r requirements.txt`. | **PASS** |
+| **11** | Phase 3 | 3.3 Docker Ecosystem Detection | File Trigger (`Dockerfile`) | Detects `Dockerfile` / `docker-compose.yml` and outputs docker build/run command cards. | **PASS** |
+| **12** | Phase 3 | 3.4 Manifest Validation Warnings | Linter Engine | Surfacing warnings box for missing required manifest fields in `sfdx-project.json` / `skill.json`. | **PASS** |
+| **13** | Phase 4 | 4.1 "Verify Before You Run" Security Lint | Linter Engine | Flags lifecycle scripts, unpinned dependencies (`*`/`latest`), insecure URLs (`http:`), and pipe-to-shell (`curl|sh`). | **PASS** |
+| **14** | Phase 4 | 4.2 Scoped In-Session Content Search | Cross-File Search | Searches open files in session, auto-switches sidebar selection, and navigates match. | **PASS** |
+| **15** | Phase 5 | 5.1 Compare Mode Toggle & Workspace Expansion | UI Action | Hides right actions stack (`#widgetWorkspaceStack`) and expands preview canvas from 8 to 12 columns. | **PASS** |
+| **16** | Phase 5 | 5.2 Myers Diff Engine & Dual View Templates | Diff Rendering | Computes additions, deletions, and matches against commit SHA; renders Unified and Split layouts. | **PASS** |
+| **17** | Phase 5 | 5.3 Side-by-Side Contiguous Change Alignment | Alignment Generator | Pairs contiguous removed and added lines row-by-row sequentially in Split View. | **PASS** |
+| **18** | Phase 5 | 5.4 Inline Text Wrapping & High-Contrast Colors | Theme & Typography | Wraps long lines (`whitespace-pre-wrap break-all`); colors normal lines `text-slate-100` and removals `text-yellow-100`. | **PASS** |
+| **19** | Phase 5 | 5.5 Floating Header & Page-Level Scroll Target Offset | Scroll Offset Math | Settings bar pins at `sticky top-[60px]`; Next/Prev scrolls page viewport to target line below headers. | **PASS** |
+| **20** | Phase 5 | 5.6 Navigation Boundary Controls & Counter | State Handler | Disables `Prev` at index `0`, disables `Next` at index `length - 1`, and updates `X of Y changes` label. | **PASS** |
 
-#### Test Case 5.6: Exit Compare & Layout Reset
-* **Objective:** Verify that exiting Compare Mode correctly restores the multi-column workspace layout.
-* **Pre-conditions:**
-  1. Enter Compare Mode.
-* **Test Steps:**
-  1. Click the **Exit Compare** button in the header.
-  2. Or click another file in the explorer tree.
-* **Expected Result:**
-  * Compare settings bar is removed.
-  * The right actions sidebar (`#widgetWorkspaceStack`) returns and becomes visible.
-  * The main preview canvas container reverts to its normal width (`xl:col-span-8`).
-  * The original code view or rendered Markdown document is restored.
+---
+
+## Detailed End-to-End Test Suite for Phase 5 (Version Comparison)
+
+### Test Suite 5.1: Compare Mode Activation & Responsive Layout Scaling
+* **Test Case ID:** `TC-5.1.1`
+* **Objective:** Verify workspace grid expands to full width when entering Compare Mode.
+* **Pre-conditions:** App loaded with a file preview open (e.g. `index.html`).
+* **Execution Steps:**
+  1. Click **Compare** button in the preview pane header.
+  2. Inspect `#widgetWorkspaceStack` element visibility.
+  3. Inspect `#previewCanvasContainer` grid span classes.
+* **Pass Criteria:**
+  * `#widgetWorkspaceStack` gains `hidden` class.
+  * `#previewCanvasContainer` loses `xl:col-span-8` and gains `xl:col-span-12`.
+  * Compare settings bar renders at top with commit selector dropdown.
+
+### Test Suite 5.2: Diff Layout Switching & Line Alignment
+* **Test Case ID:** `TC-5.2.1`
+* **Objective:** Verify layout switching between Unified and Side-by-Side (Split) view modes and row alignment.
+* **Pre-conditions:** Active diff rendered for a file with contiguous modifications.
+* **Execution Steps:**
+  1. Toggle between **Unified** and **Split** view buttons in the settings bar.
+  2. Inspect Split view rows containing multi-line deletions and insertions.
+* **Pass Criteria:**
+  * Unified view displays single continuous column with `-` and `+` line prefixes.
+  * Split view pairs deleted and added lines side-by-side row sequentially (e.g., L1 pairs with A1).
+  * Lines wrap inline without generating horizontal scrollbars (`whitespace-pre-wrap break-all`).
+
+### Test Suite 5.3: Text Visibility & Contrast
+* **Test Case ID:** `TC-5.3.1`
+* **Objective:** Verify high-contrast text styling against dark background (`bg-slate-900`).
+* **Pre-conditions:** Active diff rendered in either Unified or Split view.
+* **Execution Steps:**
+  1. Inspect text color of normal/unchanged lines.
+  2. Inspect text color of removed lines.
+  3. Inspect text color of added lines.
+* **Pass Criteria:**
+  * Normal lines render in `text-slate-100` (light gray/white).
+  * Removed lines render in `text-yellow-100` on `bg-yellow-500/15` background.
+  * Added lines render in `text-emerald-200` on `bg-emerald-950/30` background.
+
+### Test Suite 5.4: Floating Header & Page-Level Scroll Alignment
+* **Test Case ID:** `TC-5.4.1`
+* **Objective:** Verify settings bar stays floating during page scroll and Next/Prev positions code lines correctly.
+* **Pre-conditions:** Active diff with multiple change blocks loaded on a long file.
+* **Execution Steps:**
+  1. Scroll the page vertically down past the top header.
+  2. Click **Next** button multiple times.
+  3. Click **Prev** button.
+* **Pass Criteria:**
+  * Compare settings bar remains pinned at `top-[60px]` directly under global header.
+  * Page scrolls smoothly; target change block is positioned right below the double sticky header without overshooting.
+
+### Test Suite 5.5: Navigation Boundaries & Disabling
+* **Test Case ID:** `TC-5.5.1`
+* **Objective:** Verify Next/Prev buttons disable at change boundaries and counter updates.
+* **Pre-conditions:** Active diff with N change blocks rendered.
+* **Execution Steps:**
+  1. Observe initial state of Prev and Next buttons.
+  2. Click **Next** until reaching the last change block (`N of N`).
+  3. Attempt to click Next again.
+  4. Click **Prev** until reaching the first change block (`1 of N`).
+  5. Attempt to click Prev again.
+* **Pass Criteria:**
+  * On load (`0 of N`), **Prev** is disabled (`disabled=true`).
+  * On last change (`N of N`), **Next** becomes disabled (`disabled=true`).
+  * On first change (`1 of N`), **Prev** becomes disabled (`disabled=true`).
+  * Counter label displays `X of N changes` accurately.
+
+### Test Suite 5.6: Exit Compare & Layout Reset
+* **Test Case ID:** `TC-5.6.1`
+* **Objective:** Verify exiting Compare Mode restores original workspace state.
+* **Pre-conditions:** Currently in Compare Mode.
+* **Execution Steps:**
+  1. Click **Exit Compare** button (or select another file in explorer tree).
+* **Pass Criteria:**
+  * `#widgetWorkspaceStack` sidebar becomes visible again.
+  * `#previewCanvasContainer` reverts to `xl:col-span-8`.
+  * Standard code viewer or Markdown preview is restored cleanly.
+
+---
+
+## Conclusion
+
+The Universal Git Visualiser v2 codebase is **100% verified** against all 20 QA test specifications across Phases 1 through 5. Zero open bugs or regressions remain.
