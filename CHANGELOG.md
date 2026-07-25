@@ -33,6 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Inline text word-wrapping (`whitespace-pre-wrap break-all`) to prevent horizontal scrollbars.
   - Sequential contiguous change block pairing in Split view for cleaner side-by-side line alignment.
   - Floating settings bar (`sticky top-[60px]`) containing view settings, Next/Prev navigation buttons, and boundary locking indicators that remain stationary during page scroll.
+  - Added SVG favicon (`favicon.svg`) styled after the indigo "UNIV" header badge.
+
 
 ### Fixed
 - Fixed race condition in `processLineFragmentSelection` where line highlights were cleared on re-render.
