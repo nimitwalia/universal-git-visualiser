@@ -41,3 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed compare navigation page-scroll calculations to eliminate target overshooting.
 - Fixed diff text contrast against dark editor background by introducing default `text-slate-100` and removed `text-yellow-100` styles.
 - Fixed GitHub Actions deployment timeouts by introducing a `.nojekyll` bypass file to the staging repository root.
+- Fixed syntax highlighter tag corruption on non-JSON files by converting `tokenizeSyntax` to single-pass combined regex.
+- Fixed diff navigation on large files by grouping change blocks using sequential `data-diff-index` row dataset attributes instead of DOM sibling checks.
+- Fixed deep-link range parsing in `parseLineHash` to support GitHub-style double-L URL formats (`#L8-L11`).
+

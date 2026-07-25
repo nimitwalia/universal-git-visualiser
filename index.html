@@ -1009,14 +1009,15 @@
                     .replace(/: (true|false|null|\d+)/g, ': <span class="text-amber-400 font-bold">$1</span>');
             }
             
-            const keywords = /\b(const|let|var|function|return|if|else|for|while|import|from|export|class|def|async|await|public|private|global|with|sharing)\b/g;
-            const strings = /("[^"]*"|'[^']*'|`[^`]*`)/g;
-            const comments = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/|#[^\n]*)/g;
+            // Single-pass combined regex to prevent HTML attribute corruption
+            const combinedRegex = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/|#[^\n]*)|("[^"]*"|'[^']*'|`[^`]*`)|(\b(?:const|let|var|function|return|if|else|for|while|import|from|export|class|def|async|await|public|private|global|with|sharing)\b)/g;
 
-            return safe
-                .replace(comments, '<span class="text-slate-500 italic">$1</span>')
-                .replace(strings, '<span class="text-emerald-300">$1</span>')
-                .replace(keywords, '<span class="text-purple-400 font-bold">$1</span>');
+            return safe.replace(combinedRegex, (match, comment, string, keyword) => {
+                if (comment) return `<span class="text-slate-500 italic">${comment}</span>`;
+                if (string) return `<span class="text-emerald-300">${string}</span>`;
+                if (keyword) return `<span class="text-purple-400 font-bold">${keyword}</span>`;
+                return match;
+            });
         }
 
         // 🌟 Helper: Parse Line Fragment Hash (e.g. #L5,10-15) into Set
@@ -1024,18 +1025,20 @@
             const linesToHighlight = new Set();
             if (!hash || !hash.startsWith('#L')) return linesToHighlight;
 
-            const rawSegments = hash.replace('#L', '').split(',');
+            const rawSegments = hash.replace(/^#L/i, '').split(',');
             rawSegments.forEach(segment => {
-                const cleanSegment = segment.replace(/^L/i, '').trim();
-                if (cleanSegment.includes('-')) {
-                    const [start, end] = cleanSegment.split('-').map(num => parseInt(num, 10));
+                const trimmed = segment.trim();
+                if (trimmed.includes('-')) {
+                    const parts = trimmed.split('-');
+                    const start = parseInt(parts[0].replace(/^L/i, ''), 10);
+                    const end = parseInt(parts[1].replace(/^L/i, ''), 10);
                     if (!isNaN(start) && !isNaN(end)) {
                         for (let i = Math.min(start, end); i <= Math.max(start, end); i++) {
                             linesToHighlight.add(i);
                         }
                     }
                 } else {
-                    const singleLine = parseInt(cleanSegment, 10);
+                    const singleLine = parseInt(trimmed.replace(/^L/i, ''), 10);
                     if (!isNaN(singleLine)) {
                         linesToHighlight.add(singleLine);
                     }
@@ -1215,7 +1218,7 @@
 
         // 🌟 Unified Diff Renderer Template
         function renderUnifiedDiffHtml(diffResult, ext) {
-            const linesHtml = diffResult.map(line => {
+            const linesHtml = diffResult.map((line, idx) => {
                 const tokenized = tokenizeSyntax(line.value, ext);
                 let colorClass = "";
                 let prefix = " ";
@@ -1234,7 +1237,7 @@
                 }
 
                 return `
-                    <div class="flex font-mono text-xs leading-relaxed hover:bg-slate-800/40 text-slate-100${colorClass}${changeClass}">
+                    <div data-diff-index="${idx}" class="flex font-mono text-xs leading-relaxed hover:bg-slate-800/40 text-slate-100${colorClass}${changeClass}">
                         <span class="w-12 text-right text-slate-600 select-none pr-2 border-r border-slate-800">${oldLineNumStr}</span>
                         <span class="w-12 text-right text-slate-600 select-none pr-2 border-r border-slate-800">${newLineNumStr}</span>
                         <span class="w-6 text-center select-none text-slate-500 font-bold">${prefix}</span>
@@ -1280,7 +1283,7 @@
                 }
             }
 
-            const rowsHtml = rows.map((row) => {
+            const rowsHtml = rows.map((row, idx) => {
                 let leftHtml = "";
                 let rightHtml = "";
                 let isChanged = false;
@@ -1337,7 +1340,7 @@
                 }
 
                 return `
-                    <div class="grid grid-cols-2 gap-4${changeClass}">
+                    <div data-diff-index="${idx}" class="grid grid-cols-2 gap-4${changeClass}">
                         <div>${leftHtml}</div>
                         <div>${rightHtml}</div>
                     </div>
@@ -1423,12 +1426,14 @@
             const changedEls = Array.from(renderBox.querySelectorAll('.diff-changed-line'));
 
             let currentBlock = [];
-            changedEls.forEach((el, idx) => {
-                if (idx === 0) {
+            changedEls.forEach((el) => {
+                const lineIndex = parseInt(el.getAttribute('data-diff-index'), 10);
+                if (currentBlock.length === 0) {
                     currentBlock.push(el);
                 } else {
-                    const prevEl = changedEls[idx - 1];
-                    if (prevEl.nextElementSibling === el) {
+                    const prevEl = currentBlock[currentBlock.length - 1];
+                    const prevIndex = parseInt(prevEl.getAttribute('data-diff-index'), 10);
+                    if (!isNaN(lineIndex) && !isNaN(prevIndex) && lineIndex === prevIndex + 1) {
                         currentBlock.push(el);
                     } else {
                         changeBlocks.push(currentBlock);
