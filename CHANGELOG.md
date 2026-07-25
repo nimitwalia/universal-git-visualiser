@@ -44,4 +44,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed syntax highlighter tag corruption on non-JSON files by converting `tokenizeSyntax` to single-pass combined regex.
 - Fixed diff navigation on large files by grouping change blocks using sequential `data-diff-index` row dataset attributes instead of DOM sibling checks.
 - Fixed deep-link range parsing in `parseLineHash` to support GitHub-style double-L URL formats (`#L8-L11`).
+- Fixed gutter line selection so plain Shift-click is always additive and preserves prior Cmd/Ctrl-click selections.
+
 

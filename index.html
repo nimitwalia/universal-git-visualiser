@@ -1723,9 +1723,6 @@
                 if (e.shiftKey && lastClickedLineNum !== null) {
                     const start = Math.min(lastClickedLineNum, lineNum);
                     const end = Math.max(lastClickedLineNum, lineNum);
-                    if (!e.ctrlKey && !e.metaKey) {
-                        activeSelectedLines.clear();
-                    }
                     for (let i = start; i <= end; i++) {
                         activeSelectedLines.add(i);
                     }
