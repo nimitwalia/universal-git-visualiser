@@ -47,5 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed diff navigation on large files by grouping change blocks using sequential `data-diff-index` row dataset attributes instead of DOM sibling checks.
 - Fixed deep-link range parsing in `parseLineHash` to support GitHub-style double-L URL formats (`#L8-L11`).
 - Fixed gutter line selection so plain Shift-click is always additive and preserves prior Cmd/Ctrl-click selections.
+- Fixed `navigateDiff()` visibility guard (Bug A) to prevent unnecessary page jumps when target change block is already visible in viewport.
+- Fixed `navigateDiff()` smooth-scroll race conditions (Bug B) using `requestAnimationFrame` layout settlement and scroll position diagnostics.
+
 
 

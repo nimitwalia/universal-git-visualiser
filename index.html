@@ -1515,9 +1515,13 @@
 
             const activeBlock = changeBlocks[currentChangeBlockIndex];
             if (activeBlock && activeBlock[0]) {
-                const targetEl = activeBlock[0];
-                const scrollContainer = getScrollParent(targetEl);
-                if (scrollContainer && targetEl) {
+                activeBlock.forEach(el => el.classList.add('active-diff-highlight'));
+
+                requestAnimationFrame(() => {
+                    const targetEl = activeBlock[0];
+                    const scrollContainer = getScrollParent(targetEl);
+                    if (!scrollContainer || !targetEl) return;
+
                     const containerRect = scrollContainer.getBoundingClientRect();
                     const targetRect = targetEl.getBoundingClientRect();
                     
@@ -1531,26 +1535,51 @@
                     if (compareHeader) {
                         headerHeight += compareHeader.getBoundingClientRect().height;
                     }
+
+                    const isDocumentScroll = (scrollContainer === document.documentElement || scrollContainer === document.body);
                     
-                    // Calculate absolute scroll position
-                    let targetScrollTop = 0;
-                    if (scrollContainer === document.documentElement || scrollContainer === document.body) {
-                        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                        targetScrollTop = scrollTop + targetRect.top - headerHeight - 12;
-                        
-                        window.scrollTo({
-                            top: targetScrollTop,
-                            behavior: 'smooth'
-                        });
+                    // Bug A: Check if target is already in acceptable viewing band
+                    let alreadyVisible = false;
+                    if (isDocumentScroll) {
+                        const viewportTop = headerHeight + 12;
+                        const viewportBottom = window.innerHeight * 0.85;
+                        alreadyVisible = (targetRect.top >= viewportTop && targetRect.top <= viewportBottom);
                     } else {
-                        targetScrollTop = scrollContainer.scrollTop + (targetRect.top - containerRect.top) - headerHeight - 12;
-                        scrollContainer.scrollTo({
-                            top: targetScrollTop,
-                            behavior: 'smooth'
-                        });
+                        const relativeTop = targetRect.top - containerRect.top;
+                        const viewportTop = headerHeight + 12;
+                        const viewportBottom = scrollContainer.clientHeight * 0.85;
+                        alreadyVisible = (relativeTop >= viewportTop && relativeTop <= viewportBottom);
                     }
-                }
-                activeBlock.forEach(el => el.classList.add('active-diff-highlight'));
+
+                    if (!alreadyVisible) {
+                        let targetScrollTop = 0;
+                        const initialY = window.pageYOffset || document.documentElement.scrollTop;
+
+                        if (isDocumentScroll) {
+                            targetScrollTop = initialY + targetRect.top - headerHeight - 12;
+                            console.log(`[DiffNav] Initiating scroll to targetScrollTop=${targetScrollTop}, currentY=${initialY}, docHeight=${document.documentElement.scrollHeight}`);
+                            
+                            window.scrollTo({
+                                top: targetScrollTop,
+                                behavior: 'smooth'
+                            });
+
+                            setTimeout(() => {
+                                console.log(`[DiffNav Post-Check 500ms] finalY=${window.pageYOffset || document.documentElement.scrollTop}, expectedY=${targetScrollTop}`);
+                            }, 500);
+                        } else {
+                            targetScrollTop = scrollContainer.scrollTop + (targetRect.top - containerRect.top) - headerHeight - 12;
+                            console.log(`[DiffNav Container] Initiating scroll to targetScrollTop=${targetScrollTop}, currentScrollTop=${scrollContainer.scrollTop}`);
+                            
+                            scrollContainer.scrollTo({
+                                top: targetScrollTop,
+                                behavior: 'smooth'
+                            });
+                        }
+                    } else {
+                        console.log(`[DiffNav] Target block ${currentChangeBlockIndex} is already visible. Skipping scroll.`);
+                    }
+                });
             }
 
             updateDiffNavUi();
