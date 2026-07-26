@@ -34,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Sequential contiguous change block pairing in Split view for cleaner side-by-side line alignment.
   - Floating settings bar (`sticky top-[60px]`) containing view settings, Next/Prev navigation buttons, and boundary locking indicators that remain stationary during page scroll.
   - Added SVG favicon (`favicon.svg`) styled after the indigo "UNIV" header badge.
+  - Added known-CVE lookup for pinned npm dependencies via the free OSV.dev API (batched, best-effort, fails silently if unreachable) — closes a gap where an exactly-pinned-but-vulnerable dependency previously passed the security linter with no warning.
+
 
 
 ### Fixed
