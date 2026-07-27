@@ -334,6 +334,8 @@
     </div>
 
     <script>
+        const PRIVACY_BANNER_TEXT = "<strong>Privacy:</strong> Runs entirely in your browser. Your token and requests go directly to GitHub's API (and package names/pinned versions to OSV.dev for CVE lookup) — never through our servers, because we don't have any!";
+
         let currentOwnerRepo = "";
         let repositoryTreeData = [];
         let selectedSkillId = null;
@@ -657,19 +659,26 @@
         }
 
         function initPrivacyBannerTracking() {
+            const bannerTextEl = document.getElementById('privacyBannerText');
+            if (bannerTextEl) bannerTextEl.innerHTML = PRIVACY_BANNER_TEXT;
+
             const bannerState = sessionStorage.getItem('privacy_banner_collapsed');
             if(bannerState === 'true') {
                 const banner = document.getElementById('privacyBanner');
-                banner.className = "bg-emerald-50 border-b border-emerald-100 px-4 py-0.5 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] text-emerald-800 shadow-inner shrink-0";
-                document.getElementById('privacyBannerText').innerHTML = "<strong>Privacy:</strong> Runs entirely in your browser. Your token and requests go directly to GitHub's API — never through our servers, because we don't have any!";
+                if (banner) {
+                    banner.className = "bg-emerald-50 border-b border-emerald-100 px-4 py-0.5 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] text-emerald-800 shadow-inner shrink-0";
+                }
             }
         }
 
         function collapsePrivacyBanner() {
             sessionStorage.setItem('privacy_banner_collapsed', 'true');
             const banner = document.getElementById('privacyBanner');
-            banner.className = "bg-emerald-50 border-b border-emerald-100 px-4 py-0.5 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] text-emerald-800 shadow-inner shrink-0";
-            document.getElementById('privacyBannerText').innerHTML = "<strong>Privacy:</strong> Runs entirely in your browser. Your token and requests go directly to GitHub's API — never through our servers, because we don't have any!";
+            if (banner) {
+                banner.className = "bg-emerald-50 border-b border-emerald-100 px-4 py-0.5 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] text-emerald-800 shadow-inner shrink-0";
+            }
+            const bannerTextEl = document.getElementById('privacyBannerText');
+            if (bannerTextEl) bannerTextEl.innerHTML = PRIVACY_BANNER_TEXT;
         }
 
         function handleUpdateRateLimitPill(remaining, total, resetEpoch) {

@@ -51,6 +51,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed gutter line selection so plain Shift-click is always additive and preserves prior Cmd/Ctrl-click selections.
 - Fixed `navigateDiff()` visibility guard (Bug A) to prevent unnecessary page jumps when target change block is already visible in viewport.
 - Fixed `navigateDiff()` smooth-scroll race conditions (Bug B) using `requestAnimationFrame` layout settlement and scroll position diagnostics.
+- Fixed privacy banner runtime text reversion by unifying banner copy into a single `PRIVACY_BANNER_TEXT` constant across page load, repository ingest, and session restore handlers.
+
 
 
 
