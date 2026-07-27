@@ -820,6 +820,12 @@
                 return;
             }
 
+            // Capture any repo/path deep-link still sitting in the address bar before we
+            // normalize the URL below. Only honored below if it actually points at the repo
+            // we're about to load — otherwise it's a stale leftover from whatever was loaded before.
+            const incomingDeepLink = getUrlDeepLinkParams();
+            const isMatchingDeepLink = !!(incomingDeepLink && incomingDeepLink.repo === repoValue);
+
             collapsePrivacyBanner();
 
             resetCodePreviewWorkspaceState();
@@ -827,7 +833,15 @@
             document.getElementById('repoInput').value = repoValue;
             document.getElementById('currentRepoLabel').innerText = repoValue;
             updateFavoriteStarState();
-            
+
+            // Keep the address bar in sync with the repo actually being loaded. Skip this when
+            // it's a genuine deep link into this same repo, so the ?path=/#L hash survives for
+            // the auto-open below; otherwise strip stale repo/path/line-hash from whatever was
+            // previously loaded (typed input, favorites/recents selection, or a re-ingest).
+            if (!isMatchingDeepLink && window.history.replaceState) {
+                window.history.replaceState(null, null, window.location.pathname + `?repo=${encodeURIComponent(repoValue)}`);
+            }
+
             const treeContainer = document.getElementById('treeLoadingContainer');
             treeContainer.innerHTML = `<div class="p-12 text-center text-gray-500"><span class="animate-pulse font-mono block">Analyzing remote tree architecture...</span></div>`;
 
@@ -869,9 +883,8 @@
                 updateRecentsDeck(currentOwnerRepo);
                 filterSkills();
 
-                const deepLinkObj = getUrlDeepLinkParams();
-                if (deepLinkObj && deepLinkObj.path) {
-                    selectSkill(deepLinkObj.path, false);
+                if (isMatchingDeepLink && incomingDeepLink.path) {
+                    selectSkill(incomingDeepLink.path, false);
                 }
             } catch (err) {
                 console.error(err);
