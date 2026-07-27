@@ -598,14 +598,21 @@
             loadRemoteRepository();
         }
 
-        function checkUrlDeepLinks() {
+        function getUrlDeepLinkParams() {
             const params = new URLSearchParams(window.location.search);
             const targetRepo = params.get('repo');
             if (targetRepo) {
-                document.getElementById('repoInput').value = targetRepo;
                 return { repo: targetRepo, path: params.get('path') };
             }
             return null;
+        }
+
+        function checkUrlDeepLinks() {
+            const deepLinkObj = getUrlDeepLinkParams();
+            if (deepLinkObj) {
+                document.getElementById('repoInput').value = deepLinkObj.repo;
+            }
+            return deepLinkObj;
         }
 
         function copyShareLink() {
@@ -862,7 +869,7 @@
                 updateRecentsDeck(currentOwnerRepo);
                 filterSkills();
 
-                const deepLinkObj = checkUrlDeepLinks();
+                const deepLinkObj = getUrlDeepLinkParams();
                 if (deepLinkObj && deepLinkObj.path) {
                     selectSkill(deepLinkObj.path, false);
                 }
